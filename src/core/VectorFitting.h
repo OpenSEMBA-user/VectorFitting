@@ -30,10 +30,13 @@
 
 namespace VectorFitting {
 
+using namespace Eigen;
+using namespace std;
+
 class VectorFitting {
 public:
-    typedef std::complex<Real> Complex;
-    typedef std::pair<Complex, std::vector<Complex>> Sample;
+    typedef complex<Real> Complex;
+    typedef pair<Complex, vector<Complex>> Sample;
 
     // TODO: manage options in constructor.
     // TODO: Add parameter to control order of approximation (now hard-coded in
@@ -42,25 +45,25 @@ public:
      * @param samples   Data to be fitted.
      * @param N         Order of approximation. It shall be an even number.
      */
-    VectorFitting(const std::vector<Sample>& samples, size_t order = 20);
+    VectorFitting(const vector<Sample>& samples, size_t order = 20);
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
     void fit();
 
-    std::vector<Sample> getFittedSamples(
-            const std::vector<std::complex<Real>>& frequencies) const;
-    std::vector<std::complex<Real> > getPoles();
-    std::vector<std::complex<Real> > getResidues();
+    vector<Sample> getFittedSamples(
+            const vector<complex<Real>>& frequencies) const;
+    vector<complex<Real> > getPoles();
+    vector<complex<Real> > getResidues();
     Real getRMS();
 
 private:
-    std::vector<Sample> samples_;
+    vector<Sample> samples_;
 
-    std::vector<std::complex<Real>> poles_, residues_;
+    vector<complex<Real>> poles_, residues_;
 
-    Eigen::Matrix<Complex,Eigen::Dynamic,Eigen::Dynamic>  A_, C_;
-    std::vector<Real>  B_, D_, E_;
+    Matrix<Complex,Dynamic,Dynamic>  A_, C_;
+    vector<Real>  B_, D_, E_;
 
     size_t order_;
 };

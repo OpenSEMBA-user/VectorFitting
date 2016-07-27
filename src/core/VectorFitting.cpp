@@ -22,10 +22,12 @@
 #include "VectorFitting.h"
 #include "SpaceGenerator.h"
 
+#include <iostream>
+
 namespace VectorFitting {
 
 VectorFitting::VectorFitting(
-        const std::vector<Sample>& samples,
+        const vector<Sample>& samples,
         size_t order) {
 
     samples_ = samples;
@@ -41,13 +43,14 @@ VectorFitting::VectorFitting(
     // distribution covering the range in the samples.
     // TODO: We are assuming the samples are ordered depending on their
     // imaginary parts; order them before doing this!
-    std::pair<Real,Real> range( samples_.front().first.imag(),
-                                samples_.back().first.imag());
+    pair<Real,Real> range(  samples_.front().first.imag(),
+                            samples_.back().first.imag());
 
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
-    std::vector<Real> imagParts = linspace(range, order_/2);
+    vector<Real> imagParts = linspace(range, order_/2);
 
+    // Generate all the starting poles
     for (size_t i = 0; i < order_; i+=2) {
         Real imag = imagParts[i];
         Real real = - imag / (Real) 100.0;
@@ -74,11 +77,11 @@ void VectorFitting::fit() {
 
     // Number of rows = number of samples
     // Number of columns = 2* order of approximation + 2
-    Eigen::Matrix<Complex,Eigen::Dynamic,Eigen::Dynamic> A(samples_.size(), 2*order_ + 2);
-    Eigen::Matrix<Complex,Eigen::Dynamic,Eigen::Dynamic> B(samples_.size(), 1);
+    MatrixXcd A(samples_.size(), 2*order_ + 2);
+    MatrixXcd B(samples_.size(), 1);
 
     // TODO: We are dealing only with the first element in f(s_k), so this
-    // is not yet *vector* fitting.
+    // is not yet a *vector* fitting.
     for (size_t k = 0; k < A.rows()/2; k++) {
         Complex s_k = samples_[k].first;
         Complex f_k = samples_[k].second[0];
@@ -88,7 +91,7 @@ void VectorFitting::fit() {
         // TODO: We are considering all the poles are complex, is it ok?
         for (size_t i = 0; i < order_; i+=2) {
             Complex a_i = poles_[i];
-            A(k,i) = 1.0 / (s_k - a_i) + 1.0 / (s_k - std::conj(a_i));
+            A(k,i) = 1.0 / (s_k - a_i) + 1.0 / (s_k - conj(a_i));
             A(k,i+1) = Complex(0.0,1.0) * A(k,i);
 
             A(k,2 + 2*i) = -A(k,i) * f_k;
@@ -104,6 +107,12 @@ void VectorFitting::fit() {
     //      X[N] = d
     //      X[N+1] = h
     //      X[N+2:] = sigma residues <- these values are the important ones
+    MatrixXcd X = A.colPivHouseholderQr().solve(B);
+
+    cout << X.block(0,0,20,1) << endl << "_________________________" << endl;
+    cout << X.block(19,0,1,1) << endl << "_________________________" << endl;
+    cout << X.block(20,0,1,1) << endl << "_________________________" << endl;
+    cout << X.block(21,0,20,1) << endl << "_________________________" << endl;
 
     // Define a diagonal matrix containing the starting poles, A, (see B.2)
     // as follows:
@@ -124,17 +133,17 @@ void VectorFitting::fit() {
     // Compute the eigen values of H = A - BC
 }
 
-std::vector<VectorFitting::Sample> VectorFitting::getFittedSamples(
-        const std::vector<Complex >& frequencies) const {
+vector<VectorFitting::Sample> VectorFitting::getFittedSamples(
+        const vector<Complex >& frequencies) const {
 
 }
 
-std::vector<std::complex<Real>> VectorFitting::getPoles() {
+vector<complex<Real>> VectorFitting::getPoles() {
     // assert(computed_ == true);
     return poles_;
 }
 
-std::vector<std::complex<Real>> VectorFitting::getResidues() {
+vector<complex<Real>> VectorFitting::getResidues() {
     // assert(computed_ == true);
     return residues_;
 }

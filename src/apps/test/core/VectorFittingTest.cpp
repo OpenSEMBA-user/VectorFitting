@@ -34,6 +34,7 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     const size_t nS = 101;
     vector<Real> sImag = logspace(pair<Real,Real>(0.0,4.0), nS);
     vector<VectorFitting::VectorFitting::Sample> samples(nS);
+    
     for (size_t i = 0; i < nS; i++) {
         samples[i].first = complex<Real>(0.0, - 2.0 * M_PI * sImag[i]);
 
