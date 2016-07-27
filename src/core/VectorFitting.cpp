@@ -78,7 +78,7 @@ void VectorFitting::fit() {
     // Number of rows = number of samples
     // Number of columns = 2* order of approximation + 2
     MatrixXcd A(samples_.size(), 2*order_ + 2);
-    MatrixXcd B(samples_.size(), 1);
+    VectorXcd B(samples_.size());
 
     // TODO: We are dealing only with the first element in f(s_k), so this
     // is not yet a *vector* fitting.
@@ -101,46 +101,52 @@ void VectorFitting::fit() {
         A(k, order_+1) = s_k;
     }
 
-    // Solve AX = B (¿by singular value decomposition? Eigen!), whose elements
+    // To follow (A.8) note, it is necessary to build A' and B' as a stack
+    // of the real and imaginary parts of A and B
+    MatrixXd Ap(2*A.rows(), A.cols());
+    VectorXd Bp(2*B.size());
+
+    Ap << A.real(),
+          A.imag();
+
+    Bp << B.real(),
+          B.imag();
+
+    // Solve A'X = B' (¿by singular value decomposition? Eigen!), whose elements
     // are:
     //      X[:N] = f residues
     //      X[N] = d
     //      X[N+1] = h
     //      X[N+2:] = sigma residues <- these values are the important ones
-    ArrayXcd X = A.colPivHouseholderQr().solve(B);
+    VectorXd X = Ap.colPivHouseholderQr().solve(Bp);
 
-    ArrayXcd fResidues = X.head(order_);
-    Complex d = X[order_];
-    Complex h = X[order_ + 1];
-    ArrayXcd sigmaResidues = X.tail(X.size() - (order_ + 2));
+    VectorXd fResidues = X.head(order_);
+    Real d = X[order_];
+    Real h = X[order_ + 1];
+    VectorXd sigmaResidues = X.tail(X.size() - (order_ + 2));
 
     // Debug check
     assert(sigmaResidues.size() == poles_.size());
 
-    // cout << X.block(0,0,20,1) << endl << "_________________________" << endl;
-    // cout << X.block(19,0,1,1) << endl << "_________________________" << endl;
-    // cout << X.block(20,0,1,1) << endl << "_________________________" << endl;
-    // cout << X.block(21,0,20,1) << endl << "_________________________" << endl;
-
-    // Define a diagonal matrix containing the starting poles, A, (see B.2)
+    // Define a diagonal matrix containing the starting poles, A_, (see B.2)
     // as follows:
-    //      If a_i is real => A[i,i] = a_i
+    //      If a_i is real => A_[i,i] = a_i
     //      If a_i, a_{i+1} is a complex conjugate =>
-    //          A[i,i] = A[i+1, i+1] = real(a_i)
-    //          A[i,i+1] = imag(a_i)
-    //          A[i+1,i] = -imag(a_i)
-    // Define a column vector, B, as follows (see B.2):
-    //      If a_i is real => B[i] = 1
-    //      If a_i, a_{i+1} is a complex conjugate => B[i] = 2; B[i+1] = 0
-    // Define a row vector, C, as follows:
-    //      If a_i is real => C[i] = sigma_residues[i]
+    //          A_[i,i] = A_[i+1, i+1] = real(a_i)
+    //          A_[i,i+1] = imag(a_i)
+    //          A_[i+1,i] = -imag(a_i)
+    // Define a column vector, B_, as follows (see B.2):
+    //      If a_i is real => B_[i] = 1
+    //      If a_i, a_{i+1} is a complex conjugate => B_[i] = 2; B_[i+1] = 0
+    // Define a row vector, C_, as follows:
+    //      If a_i is real => C_[i] = sigma_residues[i]
     //      If a_i, a_{i+1} is a complex conjugate =>
-    //          C[i] = real(sigma_residues[i])
-    //          C[i+1] = imag(sigma_residues[i])
+    //          C_[i] = real(sigma_residues[i])
+    //          C_[i+1] = imag(sigma_residues[i])
 
     MatrixXd A_(poles_.size(), poles_.size());
-    ColumnVectorXd B_(poles_.size());
-    RowVectorXd C_(poles_.size());
+    VectorXd B_(poles_.size());
+    RowVectorXd C_ = sigmaResidues; // TODO: We're considering only complex poles
 
     // Populate matrices A_, B_ and C_
     for (size_t i = 0; i < A_.rows(); i+=2) {
@@ -154,16 +160,15 @@ void VectorFitting::fit() {
 
         B(i) = 2;
         B(i+1) = 0;
-
-        Real sigmaReal = sigmaResidues[i].real();
-        Real sigmaImag = sigmaResidues[i].imag();
-
-        C_(i) = sigmaReal;
-        C_(i+1) = sigmaImag;
     }
 
-    // Compute the eigen values of H = A - BC
-    MatrixXd = A_ - B
+    // Compute the eigen values of H = A - BC, which are the new poles
+    MatrixXd H = A_ - B_*C_;
+
+    EigenSolver<MatrixXd> eigenSolver(H);
+
+    // Computation of the ¿new poles?
+    eigenSolver.eigenvalues();
 }
 
 vector<VectorFitting::Sample> VectorFitting::getFittedSamples(
@@ -181,7 +186,13 @@ vector<complex<Real>> VectorFitting::getResidues() {
     return residues_;
 }
 
-Real VectorFitting::getRMS() {
+/**
+ * Returns the error of the model, measured as the root mean
+ * square of the estimated data with respect to the samples.
+ * @return Real - Root mean square error of the model.
+ */
+Real VectorFitting::getRMSE() {
+    return(0.0);
 }
 
 } /* namespace VectorFitting */

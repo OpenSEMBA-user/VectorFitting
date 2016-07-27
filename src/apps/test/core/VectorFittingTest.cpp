@@ -51,5 +51,5 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     VectorFitting::VectorFitting fitting(samples, approximationOrder);
     fitting.fit();
 
-    EXPECT_NEAR(0.0, fitting.getRMS(), 1e-3);
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
 }

@@ -55,7 +55,7 @@ public:
             const vector<complex<Real>>& frequencies) const;
     vector<complex<Real> > getPoles();
     vector<complex<Real> > getResidues();
-    Real getRMS();
+    Real getRMSE();
 
 private:
     vector<Sample> samples_;
