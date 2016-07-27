@@ -26,9 +26,8 @@
 
 namespace VectorFitting {
 
-VectorFitting::VectorFitting(
-        const vector<Sample>& samples,
-        size_t order) {
+VectorFitting::VectorFitting( const vector<Sample>& samples,
+                              size_t order) {
 
     samples_ = samples;
     order_ = order;
@@ -59,11 +58,7 @@ VectorFitting::VectorFitting(
     }
 }
 
-void VectorFitting::fit() {
-    // ########################################################################
-    // ##################### STAGE 1: Pole identification #####################
-    // ########################################################################
-
+vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startingPoles){
     // Define matrix A following equation (A.3), where:
     //      s_k = sample[k].first()
     //      f(s_k) = sample[k].second()
@@ -90,7 +85,7 @@ void VectorFitting::fit() {
 
         // TODO: We are considering all the poles are complex, is it ok?
         for (size_t i = 0; i < order_; i+=2) {
-            Complex a_i = poles_[i];
+            Complex a_i = startingPoles[i];
             A(k,i) = 1.0 / (s_k - a_i) + 1.0 / (s_k - conj(a_i));
             A(k,i+1) = Complex(0.0,1.0) * A(k,i);
 
@@ -120,13 +115,13 @@ void VectorFitting::fit() {
     //      X[N+2:] = sigma residues <- these values are the important ones
     VectorXd X = Ap.colPivHouseholderQr().solve(Bp);
 
-    VectorXd fResidues = X.head(order_);
-    Real d = X[order_];
-    Real h = X[order_ + 1];
+    // VectorXd fResidues = X.head(order_);
+    // Real d = X[order_];
+    // Real h = X[order_ + 1];
     VectorXd sigmaResidues = X.tail(X.size() - (order_ + 2));
 
     // Debug check
-    assert(sigmaResidues.size() == poles_.size());
+    assert(sigmaResidues.size() == startingPoles.size());
 
     // Define a diagonal matrix containing the starting poles, A_, (see B.2)
     // as follows:
@@ -144,14 +139,14 @@ void VectorFitting::fit() {
     //          C_[i] = real(sigma_residues[i])
     //          C_[i+1] = imag(sigma_residues[i])
 
-    MatrixXd A_(poles_.size(), poles_.size());
-    VectorXd B_(poles_.size());
+    MatrixXd A_(startingPoles.size(), startingPoles.size());
+    VectorXd B_(startingPoles.size());
     RowVectorXd C_ = sigmaResidues; // TODO: We're considering only complex poles
 
     // Populate matrices A_, B_ and C_
     for (size_t i = 0; i < A_.rows(); i+=2) {
-        Real poleReal = poles_[i].real();
-        Real poleImag = poles_[i].imag();
+        Real poleReal = startingPoles[i].real();
+        Real poleImag = startingPoles[i].imag();
 
         A_(i, i) = A_(i+1, i+1) = poleReal;
 
@@ -167,11 +162,83 @@ void VectorFitting::fit() {
 
     EigenSolver<MatrixXd> eigenSolver(H);
 
-    // Computation of the ¿new poles?
-    eigenSolver.eigenvalues();
+    VectorXcd poles = eigenSolver.eigenvalues();
+
+    // Return the fitted poles as a std::vector of Complex
+    return(vector<Complex>(poles.data(),
+                           poles.data() + poles.rows() * poles.cols()));
 }
 
-vector<VectorFitting::Sample> VectorFitting::getFittedSamples(
+vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& poles){
+    // Define matrix A following equation (A.3) without the negative terms, where:
+    //      s_k = sample[k].first()
+    //      f(s_k) = sample[k].second()
+    //      a_i = starting poles
+    // If a_i, a_{i+1} is a complex conjugate (they always come in pairs;
+    // otherwise, there is an error), the elements have to follow equation
+    // (A.6)
+    // Define column vector B following equation (A.4), where:
+    //      f(s_k) = sample.second()
+
+
+    // Number of rows = number of samples
+    // Number of columns = 2* order of approximation + 2
+    MatrixXcd A(samples_.size(), order_ + 2);
+    VectorXcd B(samples_.size());
+
+    // TODO: We are dealing only with the first element in f(s_k), so this
+    // is not yet a *vector* fitting.
+    for (size_t k = 0; k < A.rows()/2; k++) {
+        Complex s_k = samples_[k].first;
+        Complex f_k = samples_[k].second[0];
+
+        B(k) = f_k;
+
+        // TODO: We are considering all the poles are complex, is it ok?
+        for (size_t i = 0; i < order_; i+=2) {
+            Complex a_i = poles[i];
+            A(k,i) = 1.0 / (s_k - a_i) + 1.0 / (s_k - conj(a_i));
+            A(k,i+1) = Complex(0.0,1.0) * A(k,i);
+
+            // A(k,2 + 2*i) = -A(k,i) * f_k;
+            // A(k,2 + 2*i + 1) = -A(k,i+1) * f_k;
+        }
+        A(k, order_) = Complex(1.0,0.0);
+        A(k, order_+1) = s_k;
+    }
+
+    // To follow (A.8) note, it is necessary to build A' and B' as a stack
+    // of the real and imaginary parts of A and B
+    MatrixXd Ap(2*A.rows(), A.cols());
+    VectorXd Bp(2*B.size());
+
+    Ap << A.real(),
+          A.imag();
+
+    Bp << B.real(),
+          B.imag();
+
+    // Solve A'X = B' (¿by singular value decomposition? Eigen!), whose elements
+    // are:
+    //      X[:N] = f residues
+    //      X[N] = d
+    //      X[N+1] = h
+    //      X[N+2:] = sigma residues <- these values are the important ones
+    VectorXd X = Ap.colPivHouseholderQr().solve(Bp);
+
+    VectorXd residues = X.head(order_);
+
+    // Return the fitted residues as a std::vector of Complex
+    return(vector<Complex>(residues.data(),
+                           residues.data() + residues.rows() * residues.cols()));
+}
+
+void VectorFitting::fit(){
+    poles_ = poleIdentification(poles_);
+    residues_ = residueIdentification(poles_);
+}
+
+vector<Sample> VectorFitting::getFittedSamples(
         const vector<Complex >& frequencies) const {
 
 }

@@ -33,14 +33,13 @@ namespace VectorFitting {
 using namespace Eigen;
 using namespace std;
 
-class VectorFitting {
-public:
     typedef complex<Real> Complex;
     typedef pair<Complex, vector<Complex>> Sample;
 
+class VectorFitting {
+public:
+
     // TODO: manage options in constructor.
-    // TODO: Add parameter to control order of approximation (now hard-coded in
-    // the implementation)
     /**
      * @param samples   Data to be fitted.
      * @param N         Order of approximation. It shall be an even number.
@@ -60,12 +59,33 @@ public:
 private:
     vector<Sample> samples_;
 
-    vector<complex<Real>> poles_, residues_;
+    vector<Complex> poles_, residues_;
 
     Matrix<Complex,Dynamic,Dynamic>  A_, C_;
     vector<Real>  B_, D_, E_;
 
     size_t order_;
+
+    /**
+     * Perfoms the first stage of the algorithm: given a set of starting
+     * poles, it returns the new fitted poles.
+     * @param startingPoles Vector of complex numbers (Real as its base
+     *                      type) containing the starting poles.
+     * @return A vector of complex numbers with Real as its base type
+     *           containing the fitted poles. This set of poles should
+     *           be used to feed the residue identification method.
+     */
+    vector<Complex> poleIdentification(const vector<Complex>& startingPoles);
+
+    /**
+     * Perfoms the second stage of the algorithm: given a set of known
+     * poles, it returns the new fitted residues.
+     * @param poles Vector of complex numbers (Real as its base type)
+     *              containing the known poles.
+     * @return A vector of complex numbers with Real as its base type
+     *           containing the fitted residues.
+     */
+    vector<Complex> residueIdentification(const vector<Complex>& poles);
 };
 
 } /* namespace VectorFitting */
