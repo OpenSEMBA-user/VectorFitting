@@ -107,12 +107,20 @@ void VectorFitting::fit() {
     //      X[N] = d
     //      X[N+1] = h
     //      X[N+2:] = sigma residues <- these values are the important ones
-    MatrixXcd X = A.colPivHouseholderQr().solve(B);
+    ArrayXcd X = A.colPivHouseholderQr().solve(B);
 
-    cout << X.block(0,0,20,1) << endl << "_________________________" << endl;
-    cout << X.block(19,0,1,1) << endl << "_________________________" << endl;
-    cout << X.block(20,0,1,1) << endl << "_________________________" << endl;
-    cout << X.block(21,0,20,1) << endl << "_________________________" << endl;
+    ArrayXcd fResidues = X.head(order_);
+    Complex d = X[order_];
+    Complex h = X[order_ + 1];
+    ArrayXcd sigmaResidues = X.tail(X.size() - (order_ + 2));
+
+    // Debug check
+    assert(sigmaResidues.size() == poles_.size());
+
+    // cout << X.block(0,0,20,1) << endl << "_________________________" << endl;
+    // cout << X.block(19,0,1,1) << endl << "_________________________" << endl;
+    // cout << X.block(20,0,1,1) << endl << "_________________________" << endl;
+    // cout << X.block(21,0,20,1) << endl << "_________________________" << endl;
 
     // Define a diagonal matrix containing the starting poles, A, (see B.2)
     // as follows:
@@ -128,9 +136,34 @@ void VectorFitting::fit() {
     //      If a_i is real => C[i] = sigma_residues[i]
     //      If a_i, a_{i+1} is a complex conjugate =>
     //          C[i] = real(sigma_residues[i])
-    //          C[i] = imag(sigma_residues[i])
+    //          C[i+1] = imag(sigma_residues[i])
+
+    MatrixXd A_(poles_.size(), poles_.size());
+    ColumnVectorXd B_(poles_.size());
+    RowVectorXd C_(poles_.size());
+
+    // Populate matrices A_, B_ and C_
+    for (size_t i = 0; i < A_.rows(); i+=2) {
+        Real poleReal = poles_[i].real();
+        Real poleImag = poles_[i].imag();
+
+        A_(i, i) = A_(i+1, i+1) = poleReal;
+
+        A_(i, i+1) = poleImag;
+        A_(i+1, i) = -poleImag;
+
+        B(i) = 2;
+        B(i+1) = 0;
+
+        Real sigmaReal = sigmaResidues[i].real();
+        Real sigmaImag = sigmaResidues[i].imag();
+
+        C_(i) = sigmaReal;
+        C_(i+1) = sigmaImag;
+    }
 
     // Compute the eigen values of H = A - BC
+    MatrixXd = A_ - B
 }
 
 vector<VectorFitting::Sample> VectorFitting::getFittedSamples(
