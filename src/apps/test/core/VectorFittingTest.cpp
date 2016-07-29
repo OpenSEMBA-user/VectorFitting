@@ -43,7 +43,7 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     // Populate frequencies and responses
     for (size_t k = 0; k < nS; k++) {
         // Frequenciy
-        const Complex sk = Complex(0.0, 2.0 * M_PI * sImag[i]);
+        const Complex sk = Complex(0.0, 2.0 * M_PI * sImag[k]);
 
         // Response
         vector<Complex> f(1);
@@ -76,3 +76,81 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     // Error check
     EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
 }
+
+// // Test first example of Bjorn Gustavsen's code
+// TEST_F(MathFittingVectorFittingTest, test) {
+//     // Define samples frequencies
+//     const size_t nS = 800;
+//     vector<VectorFitting::Sample> samples(nS);
+//
+//     // Compute distribution of the frequencies
+//     vector<Real> sImag = linspace(pair<Real,Real>(1,1e5), nS);
+//
+//     // Known poles
+//     vector<Complex> knownPoles;
+//     knownPoles.push_back(Complex(-4500, 0.0));
+//     knownPoles.push_back(Complex(-41000, 0.0));
+//     knownPoles.push_back(Complex(-100, +5000));
+//     knownPoles.push_back(Complex(-100, -5000));
+//     knownPoles.push_back(Complex(-120, +15000));
+//     knownPoles.push_back(Complex(-120, -15000));
+//     knownPoles.push_back(Complex(-3000, +35000));
+//     knownPoles.push_back(Complex(-3000, -35000));
+//
+//     // Known residues
+//     vector<Complex> knownResidues;
+//     knownResidues.push_back(Complex(-3000, 0.0));
+//     knownResidues.push_back(Complex(-83000, 0.0));
+//     knownResidues.push_back(Complex(-5, +7000));
+//     knownResidues.push_back(Complex(-5, -7000));
+//     knownResidues.push_back(Complex(-20, +18000));
+//     knownResidues.push_back(Complex(-20, -18000));
+//     knownResidues.push_back(Complex(6000, +45000));
+//     knownResidues.push_back(Complex(6000, -45000));
+//
+//     // Known parameters
+//     Real knownD = 0.2;
+//     Real knownH = 2e-5;
+//
+//     // Vector to store the fitted samples and loop variable
+//     vector<Sample> knownResponses(nS);
+//
+//     for (size_t k = 0; k < nS; k++) {
+//         // Independent variable s
+//         Complex sk = Complex(0.0, sImag[k]);
+//
+//         // Computation of the dependent variable f(s) with the model (see (2))
+//         vector<Complex> f(1);
+//         f[0] = Complex(0,0);
+//
+//         for (size_t n = 0; n < knownPoles.size(); n++) {
+//             Complex cn = knownResidues[n];
+//             Complex an = knownPoles[n];
+//
+//             f[0] += cn / (sk - an);
+//         }
+//
+//         f[0] += knownD + sk * knownH;
+//
+//         knownResponses[k] = Sample(sk, f);
+//     }
+//
+//     // Define starting poles
+//     const size_t N = 5;
+//     vector<Complex> poles(N);
+//
+//     // Compute distribution of the poles
+//     vector<Real> pReal = logspace(pair<Real,Real>(0.0,4.0), N);
+//
+//     // Populate starting poles
+//     for (size_t i = 0; i < N; i++) {
+//         poles[i] = Complex(-2 * M_PI * pReal[i], 0.0);
+//     }
+//
+//     // Model fitting
+//     VectorFitting::VectorFitting fitting(samples, poles, N);
+//     fitting.fit();
+//
+//     // Error check
+//     EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
+// }
