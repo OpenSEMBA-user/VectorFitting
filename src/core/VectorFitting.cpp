@@ -290,7 +290,21 @@ vector<complex<Real>> VectorFitting::getResidues() {
  * @return Real - Root mean square error of the model.
  */
 Real VectorFitting::getRMSE() {
-    return(0.0);
+    vector<Sample> fittedSamples = getFittedSamples(vector<Complex>());
+
+    Real error = 0.0;
+    Complex actual, fitted;
+
+    for (size_t i = 0; i < samples_.size(); i++) {
+        actual = samples_[i].second[0];
+        fitted = fittedSamples[i].second[0];
+
+        cout << actual << "\t" << fitted << endl;
+
+        error += abs((actual - fitted) * (actual - fitted));
+    }
+
+    return sqrt(error/samples_.size());
 }
 
 } /* namespace VectorFitting */
