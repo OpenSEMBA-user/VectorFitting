@@ -107,8 +107,7 @@ vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startin
     Bp << B.real(),
           B.imag();
 
-    // Solve A'X = B' (¿by singular value decomposition? Eigen!), whose elements
-    // are:
+    // Solve A'X = B'. The solution X is the following:
     //      X[:N] = f residues
     //      X[N] = d
     //      X[N+1] = h
@@ -199,10 +198,8 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
             Complex a_i = poles[i];
             A(k,i) = 1.0 / (s_k - a_i) + 1.0 / (s_k - conj(a_i));
             A(k,i+1) = Complex(0.0,1.0) * A(k,i);
-
-            // A(k,2 + 2*i) = -A(k,i) * f_k;
-            // A(k,2 + 2*i + 1) = -A(k,i+1) * f_k;
         }
+
         A(k, order_) = Complex(1.0,0.0);
         A(k, order_+1) = s_k;
     }
@@ -223,14 +220,23 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
     //      X[:N] = f residues
     //      X[N] = d
     //      X[N+1] = h
-    //      X[N+2:] = sigma residues <- these values are the important ones
     VectorXd X = Ap.colPivHouseholderQr().solve(Bp);
 
-    VectorXd residues = X.head(order_);
+    vector<Complex> residues;
 
-    // Return the fitted residues as a std::vector of Complex
-    return(vector<Complex>(residues.data(),
-                           residues.data() + residues.rows() * residues.cols()));
+    for (size_t i = 0; i < order_; i+=2) {
+        Real real = X(i);
+        Real imag = X(i+1);
+
+        residues.push_back(Complex(real, -imag));
+        residues.push_back(Complex(real, imag));
+    }
+
+    d_ = X(order_);
+    h_ = X(order_ + 1);
+
+    // Return the fitted residues
+    return(residues);
 }
 
 void VectorFitting::fit(){
@@ -238,9 +244,34 @@ void VectorFitting::fit(){
     residues_ = residueIdentification(poles_);
 }
 
+// Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
+// computed with the model in (2)
+// TODO: This is not yet a *vector* fitting, the [0] has to be removed :)
 vector<Sample> VectorFitting::getFittedSamples(
         const vector<Complex >& frequencies) const {
 
+    // Vector to store the fitted samples and loop variable
+    vector<Sample> fittedSamples;
+    Sample sample;
+
+    for (size_t i = 0; i < samples_.size(); i++) {
+        // Independent variable s
+        sample.first = samples_[i].first;
+
+        // Computation of the dependent variable f(s) with the model (see (2))
+        sample.second = vector<Complex>();
+        sample.second.push_back(Complex(0,0));
+
+        for (size_t j = 0; j < order_; j++) {
+            sample.second[0] += residues_[j] / (sample.first - poles_[j]);
+        }
+
+        sample.second[0] += d_ + sample.first * h_;
+
+        fittedSamples.push_back(sample);
+    }
+
+    return fittedSamples;
 }
 
 vector<complex<Real>> VectorFitting::getPoles() {

@@ -61,6 +61,8 @@ private:
 
     vector<Complex> poles_, residues_;
 
+    Real d_, h_;
+
     Matrix<Complex,Dynamic,Dynamic>  A_, C_;
     vector<Real>  B_, D_, E_;
 
