@@ -3,6 +3,7 @@
 //                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
 //                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
 //                    Daniel Mateos Romero            (damarro@semba.guru)
+//                    Alejandro García Montoro        (alejandro.garciamontoro@gmail.com)
 //
 // This file is part of OpenSEMBA.
 //
@@ -30,26 +31,48 @@ class MathFittingVectorFittingTest : public ::testing::Test {
 
 };
 
+// Test first example of Bjorn Gustavsen's code
 TEST_F(MathFittingVectorFittingTest, ex1) {
+    // Define samples frequencies
     const size_t nS = 101;
+    vector<VectorFitting::Sample> samples(nS);
+
+    // Compute distribution of the frequencies
     vector<Real> sImag = logspace(pair<Real,Real>(0.0,4.0), nS);
-    vector<VectorFitting::VectorFitting::Sample> samples(nS);
 
-    for (size_t i = 0; i < nS; i++) {
-        samples[i].first = complex<Real>(0.0, - 2.0 * M_PI * sImag[i]);
+    // Populate frequencies and responses
+    for (size_t k = 0; k < nS; k++) {
+        // Frequenciy
+        const Complex sk = Complex(0.0, 2.0 * M_PI * sImag[i]);
 
-        const complex<Real> sk = samples[i].first;
-        vector<complex<Real>> f(1);
+        // Response
+        vector<Complex> f(1);
         f[0] =  2.0 /(sk+5.0)
-                + complex<Real>(30.0,40.0) / (sk-(complex<Real>(-100.0,500.0)))
-                + complex<Real>(30.0,-40.0)/ (sk-(complex<Real>(-100.0,-500.0)))
+                + Complex(30.0,40.0)  / (sk-Complex(-100.0,500.0))
+                + Complex(30.0,-40.0) / (sk-Complex(-100.0,-500.0))
                 + 0.5;
-        samples[i].second = f;
+
+        // Build sample
+        samples[k].first = sk;
+        samples[k].second = f;
     }
 
-    size_t approximationOrder = 20;
-    VectorFitting::VectorFitting fitting(samples, approximationOrder);
+    // Define starting poles
+    const size_t N = 3;
+    vector<Complex> poles(N);
+
+    // Compute distribution of the poles
+    vector<Real> pReal = logspace(pair<Real,Real>(0.0,4.0), N);
+
+    // Populate starting poles
+    for (size_t i = 0; i < N; i++) {
+        poles[i] = Complex(-2 * M_PI * pReal[i], 0.0);
+    }
+
+    // Model fitting
+    VectorFitting::VectorFitting fitting(samples, poles, N);
     fitting.fit();
 
+    // Error check
     EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
 }
