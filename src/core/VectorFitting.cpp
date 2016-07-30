@@ -41,25 +41,25 @@ bool isReal(Complex n, Real tol = 1e-20){ return(n.imag() < tol); }
 
 
 void VectorFitting::init(const vector<Sample>& samples,
-    const vector<Complex>& poles,
-    size_t order) {
-        // Sanity check: the complex poles should come in pairs; otherwise, there
-        // is an error
-        Complex currentPole, conjugate;
-        for (size_t i = 0; i < poles.size(); i++) {
-            currentPole = poles[i];
+                         const vector<Complex>& poles,
+                         size_t order) {
+    // Sanity check: the complex poles should come in pairs; otherwise, there
+    // is an error
+    Complex currentPole, conjugate;
+    for (size_t i = 0; i < poles.size(); i++) {
+        currentPole = poles[i];
 
-            if(!isReal(currentPole)){
-                assert(conj(currentPole) == poles[i+1]);
-                i++;
-            }
+        if(!isReal(currentPole)){
+            assert(conj(currentPole) == poles[i+1]);
+            i++;
         }
-
-
-        samples_ = samples;
-        poles_ = poles;
-        order_ = order;
     }
+
+
+    samples_ = samples;
+    poles_ = poles;
+    order_ = order;
+}
 
 
 VectorFitting::VectorFitting(const vector<Sample>& samples,
@@ -94,14 +94,14 @@ VectorFitting::VectorFitting( const vector<Sample>& samples,
     // faster convergence -see Userguide, p.8-)
     vector<Real> imagParts = linspace(range, order/2);
 
-    cout << "HOLA" << endl;
     // Generate all the starting poles
     vector<Complex> poles(order);
+
     for (size_t i = 0; i < order; i+=2) {
-        Real imag = imagParts[i];
+        Real imag = imagParts[i/2];
         Real real = - imag / (Real) 100.0;
-        poles_[i] = Complex(real, imag);
-        poles_[i+1] = conj(poles_[i]);
+        poles[i] = Complex(real, imag);
+        poles[i+1] = conj(poles[i]);
     }
 
     init(samples, poles, order);
