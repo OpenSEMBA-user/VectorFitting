@@ -80,6 +80,9 @@ private:
 
     size_t order_;
 
+    void init(const vector<Sample>& samples, const vector<Complex>& poles,
+              size_t order);
+
     /**
      * Perfoms the first stage of the algorithm: given a set of starting
      * poles, it returns the new fitted poles.
