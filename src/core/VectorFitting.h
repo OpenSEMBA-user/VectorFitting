@@ -62,9 +62,10 @@ public:
     // is preferred, it's a good idea to have it as a public method
     void fit();
 
+    vector<Complex> predictResponse(Complex freq) const;
     vector<Sample> getFittedSamples() const;
-    vector<complex<Real> > getPoles();
-    vector<complex<Real> > getResidues();
+    vector<Complex> getPoles();
+    vector<Complex> getResidues();
     Real getRMSE();
 
 private:
