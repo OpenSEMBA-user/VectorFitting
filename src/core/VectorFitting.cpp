@@ -37,7 +37,7 @@ struct {
 } sampleOrdering;
 
 // Quick check to see if a Complex number is real
-bool isReal(Complex n, Real tol = 1e-20){ return(n.imag() < tol); }
+bool isReal(Complex n, Real tol = 1e-20){ return(abs(n.imag()) < tol); }
 
 
 void VectorFitting::init(const vector<Sample>& samples,
@@ -48,8 +48,10 @@ void VectorFitting::init(const vector<Sample>& samples,
     Complex currentPole, conjugate;
     for (size_t i = 0; i < poles.size(); i++) {
         currentPole = poles[i];
+        cout << currentPole << endl;
 
         if(!isReal(currentPole)){
+            cout << conj(currentPole) << "\t" << poles[i+1] << endl;
             assert(conj(currentPole) == poles[i+1]);
             i++;
         }
@@ -59,6 +61,11 @@ void VectorFitting::init(const vector<Sample>& samples,
     samples_ = samples;
     poles_ = poles;
     order_ = order;
+    samplesSize_ = samples.size();
+
+    // TODO: do a sanity check to ensure the dimension of f(s_k) for every s_k
+    // is the same.
+    responseSize_ = samples[0].second.size();
 }
 
 
@@ -122,12 +129,12 @@ vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startin
 
     // Number of rows = number of samples
     // Number of columns = 2* order of approximation + 2
-    MatrixXcd A(samples_.size(), 2*order + 2);
-    VectorXcd B(samples_.size());
+    MatrixXcd A(samplesSize_, 2*order + 2);
+    VectorXcd B(samplesSize_);
 
     // TODO: We are dealing only with the first element in f(s_k), so this
     // is not yet a *vector* fitting.
-    for (size_t k = 0; k < samples_.size(); k++) {
+    for (size_t k = 0; k < samplesSize_; k++) {
         Complex s_k = samples_[k].first;
         Complex f_k = samples_[k].second[0];
 
@@ -270,12 +277,12 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
 
     // Number of rows = number of samples
     // Number of columns = order of approximation + 2
-    MatrixXcd A(samples_.size(), order + 2);
-    VectorXcd B(samples_.size());
+    MatrixXcd A(samplesSize_, order + 2);
+    VectorXcd B(samplesSize_);
 
     // TODO: We are dealing only with the first element in f(s_k), so this
     // is not yet a *vector* fitting.
-    for (size_t k = 0; k < samples_.size(); k++) {
+    for (size_t k = 0; k < samplesSize_; k++) {
         Complex s_k = samples_[k].first;
         Complex f_k = samples_[k].second[0];
 
@@ -373,13 +380,13 @@ void VectorFitting::fit(){
 
 // Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
 // computed with the model in (2)
-vector<Sample> VectorFitting::getFittedSamples() const {
+vector<Sample> VectorFitting::getFittedSamples(vector<Complex> freqs) const {
     // Vector to store the fitted samples
-    vector<Sample> fittedSamples(samples_.size());
+    vector<Sample> fittedSamples(freqs.size());
 
-    for (size_t k = 0; k < samples_.size(); k++) {
+    for (size_t k = 0; k < freqs.size(); k++) {
         // Independent variable s
-        Complex sk = samples_[k].first;
+        Complex sk = freqs[k];
 
         // Response of the model
         vector<Complex> response = predictResponse(sk);
@@ -391,20 +398,26 @@ vector<Sample> VectorFitting::getFittedSamples() const {
     return fittedSamples;
 }
 
-// TODO: This is not yet a vector fitting
+// TODO: This is slowly becoming a vector fitting
 vector<Complex> VectorFitting::predictResponse(Complex freq) const {
     // Computation of the response with the fitted model (see (2))
-    vector<Complex> response(1);
-    response[0] = Complex(0,0);
+    vector<Complex> response(responseSize_);
 
-    for (size_t n = 0; n < order_; n++) {
-        Complex an = poles_[n];
-        Complex cn = residues_[n];
+    for (size_t i = 0; i < responseSize_; i++) {
+        response[i] = Complex(0,0);
 
-        response[0] += cn / (freq - an);
+        for (size_t n = 0; n < order_; n++) {
+            Complex an = poles_[n];
+            //TODO: residues should be different for every element in the
+            //response; e.g. residues_[i][n].
+            Complex cn = residues_[n];
+
+            response[i] += cn / (freq - an);
+        }
+
+        // d_ and h_ should have responseSize_ elements; e.g., d_[i], h_[i];
+        response[i] += d_ + freq * h_;
     }
-
-    response[0] += d_ + freq * h_;
 
     return response;
 }
@@ -426,25 +439,37 @@ vector<complex<Real>> VectorFitting::getResidues() {
  */
 Real VectorFitting::getRMSE() {
     vector<Sample> actualSamples = samples_;
-    vector<Sample> fittedSamples = getFittedSamples();
+
+    // Retrieve the frequencies from the samples
+    vector<Complex> frequencies(actualSamples.size());
+    for (size_t k = 0; k < actualSamples.size(); k++) {
+        frequencies[k] = actualSamples[k].first;
+    }
+
+    // Get the fitted samples
+    vector<Sample> fittedSamples = getFittedSamples(frequencies);
 
     Real error = 0.0;
     Complex actual, fitted, diff;
 
-    for (size_t i = 0; i < samples_.size(); i++) {
+    // Compute the error between the real responses and the fitted ones
+    for (size_t i = 0; i < samplesSize_; i++) {
         // Sanity check: the response should be on the *same* frequency
         assert(actualSamples[i].first == fittedSamples[i].first);
 
-        // Retrieve the actual and fitted responses
-        actual = actualSamples[i].second[0];
-        fitted = fittedSamples[i].second[0];
+        // Iterate through all the responses in the vector of each sample
+        for (size_t j = 0; j < actualSamples[i].second.size(); j++) {
+            // Retrieve the actual and fitted responses
+            actual = actualSamples[i].second[j];
+            fitted = fittedSamples[i].second[j];
 
-        diff = actual - fitted;
+            diff = actual - fitted;
 
-        error += abs(diff * diff);
+            error += abs(diff * diff);
+        }
     }
 
-    return sqrt(error/samples_.size());
+    return sqrt(error/(samplesSize_*responseSize_));
 }
 
 } /* namespace VectorFitting */

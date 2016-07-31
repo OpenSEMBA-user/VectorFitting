@@ -63,7 +63,7 @@ public:
     void fit();
 
     vector<Complex> predictResponse(Complex freq) const;
-    vector<Sample> getFittedSamples() const;
+    vector<Sample> getFittedSamples(vector<Complex> freqs) const;
     vector<Complex> getPoles();
     vector<Complex> getResidues();
     Real getRMSE();
@@ -78,7 +78,14 @@ private:
     Matrix<Complex,Dynamic,Dynamic>  A_, C_;
     vector<Real>  B_, D_, E_;
 
+    // Order of approximation
     size_t order_;
+
+    // Number of elements in the response vector; i.e., dimension of f(s_k)
+    size_t responseSize_;
+
+    // Number of samples; i.e., size of samples_
+    size_t samplesSize_;
 
     void init(const vector<Sample>& samples, const vector<Complex>& poles,
               size_t order);
