@@ -184,6 +184,13 @@ TEST_F(MathFittingVectorFittingTest, ex2){
         startingPoles.push_back(Complex(alpha, beta[n]));
     }
 
+    // Model fitting
+    VectorFitting::VectorFitting fitting(samples, startingPoles, N);
+    fitting.fit();
+
+    // Error check
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
+
 
 }
 
