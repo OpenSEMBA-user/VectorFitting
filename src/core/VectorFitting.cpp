@@ -365,7 +365,7 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
 }
 
 void VectorFitting::fit(){
-    // for (size_t i = 0; i < 1; i++) {
+    // for (size_t i = 0; i < 10; i++) {
         poles_ = poleIdentification(poles_);
         residues_ = residueIdentification(poles_);
     // }
