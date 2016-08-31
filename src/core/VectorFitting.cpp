@@ -37,8 +37,9 @@ struct {
 } sampleOrdering;
 
 // Quick check to see if a Complex number is real
-bool isReal(Complex n, Real tol = 1e-20){ return(abs(n.imag()) < tol); }
-
+bool isReal(Complex n){
+    return equal(n.imag(), 0.0);
+}
 
 void VectorFitting::init(const vector<Sample>& samples,
                          const vector<Complex>& poles,
@@ -48,10 +49,8 @@ void VectorFitting::init(const vector<Sample>& samples,
     Complex currentPole, conjugate;
     for (size_t i = 0; i < poles.size(); i++) {
         currentPole = poles[i];
-        cout << currentPole << endl;
 
         if(!isReal(currentPole)){
-            cout << conj(currentPole) << "\t" << poles[i+1] << endl;
             assert(conj(currentPole) == poles[i+1]);
             i++;
         }
@@ -68,14 +67,11 @@ void VectorFitting::init(const vector<Sample>& samples,
     responseSize_ = samples[0].second.size();
 }
 
-
 VectorFitting::VectorFitting(const vector<Sample>& samples,
                              const vector<Complex>& poles,
                              size_t order) {
      init(samples, poles, order);
 }
-
-
 
 VectorFitting::VectorFitting( const vector<Sample>& samples,
                               size_t order) {
@@ -125,7 +121,7 @@ vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startin
     // Define column vector B following equation (A.4), where:
     //      f(s_k) = sample.second()
 
-    int order = startingPoles.size();
+    size_t order = startingPoles.size();
 
     // Number of rows = number of samples
     // Number of columns = 2* order of approximation + 2
@@ -180,10 +176,6 @@ vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startin
     Bp << B.real(),
           B.imag();
 
-    cout << "A:" << endl << Ap << endl;
-    cout << "B:" << endl << Bp << endl;
-
-
     // Solve A'X = B'. The solution X is the following:
     //      X[:N] = f residues
     //      X[N] = d
@@ -192,8 +184,6 @@ vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startin
     VectorXd X = Ap.fullPivHouseholderQr().solve(Bp);
 
     VectorXd sigmaResidues = X.tail(order);
-
-    cout << "residues: " << endl << sigmaResidues << endl;
 
     // Define a diagonal matrix containing the starting poles, A_, (see B.2)
     // as follows:
@@ -255,14 +245,13 @@ vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startin
             poles(i) = Complex(-poles(i).real(), poles(i).imag());
     }
 
-    cout << "POLES:" << endl << poles << endl;
-
     // Return the fitted poles as a std::vector of Complex
     return(vector<Complex>(poles.data(),
                            poles.data() + poles.rows() * poles.cols()));
 }
 
-vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& poles){
+vector<Complex> VectorFitting::residueIdentification(
+        const vector<Complex>& poles) {
     // Define matrix A following equation (A.3) without the negative terms, where:
     //      s_k = sample[k].first()
     //      f(s_k) = sample[k].second()
@@ -332,15 +321,12 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
 
     vector<Complex> residues(order);
 
-    cout << "RESIDUES:" << endl;
-
     for (size_t i = 0; i < order; i++) {
         Complex a_i = poles[i];
 
         // Real pole
         if(isReal(a_i)){
             residues[i] = Complex(X(i), 0.0);
-            cout << residues[i] << endl;
         }
         // Complex pole
         else{
@@ -352,8 +338,6 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
 
             residues[i] = Complex(real, imag);
             residues[i+1] = Complex(real, -imag);
-            cout << residues[i] << endl;
-            cout << residues[i+1] << endl;
 
             i++;
         }
@@ -363,19 +347,12 @@ vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& pole
     d_ = X(order);
     h_ = X(order + 1);
 
-    cout << "PARAMETERS:" << endl;
-    cout << d_ << endl;
-    cout << h_ << endl;
-
-    // Return the fitted residues
     return(residues);
 }
 
 void VectorFitting::fit(){
-    // for (size_t i = 0; i < 10; i++) {
-        poles_ = poleIdentification(poles_);
-        residues_ = residueIdentification(poles_);
-    // }
+    poles_ = poleIdentification(poles_);
+    residueIdentification(poles_);
 }
 
 // Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
@@ -423,12 +400,10 @@ vector<Complex> VectorFitting::predictResponse(Complex freq) const {
 }
 
 vector<complex<Real>> VectorFitting::getPoles() {
-    // assert(computed_ == true);
     return poles_;
 }
 
 vector<complex<Real>> VectorFitting::getResidues() {
-    // assert(computed_ == true);
     return residues_;
 }
 

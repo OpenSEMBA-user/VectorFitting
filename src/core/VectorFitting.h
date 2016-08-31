@@ -27,7 +27,7 @@
 #include <complex>
 #include <eigen3/Eigen/Dense>
 
-#include "Types.h"
+#include "Real.h"
 
 namespace VectorFitting {
 
@@ -35,6 +35,12 @@ using namespace Eigen;
 using namespace std;
 
 typedef complex<Real> Complex;
+
+/**
+ * Samples are formed by a pair formed by:
+ *  - First, the parameter $s = j \omega$ a purely imaginary number.
+ *  - Second, a vector with the complex data to be fitted.
+ */
 typedef pair<Complex, vector<Complex>> Sample;
 
 // TODO: manage options in constructor.
