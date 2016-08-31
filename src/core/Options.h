@@ -27,14 +27,28 @@ namespace VectorFitting {
 
 class Options {
 public:
-    enum {
+    enum AsymptoticTrend {
         zero,
         constantOnly,
-        linear,
-    } AsymptoticTrend;
+        linear
+    };
 
     Options();
     virtual ~Options();
+
+    AsymptoticTrend getAsymptoticTrend() const;
+    bool isComplexSpaceState() const;
+    bool isRelax() const;
+    bool isSkipPoleIdentification() const;
+    bool isSkipResidueIdentification() const;
+    bool isStable() const;
+
+    void setAsymptoticTrend(AsymptoticTrend asymptoticTrend);
+    void setComplexSpaceState(bool complexSpaceState);
+    void setRelax(bool relax);
+    void setSkipPoleIdentification(bool skipPoleIdentification);
+    void setSkipResidueIdentification(bool skipResidueIdentification);
+    void setStable(bool stable);
 
 private:
     bool relax_;
@@ -42,7 +56,7 @@ private:
     AsymptoticTrend asymptoticTrend_;
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
-    bool complexSpaceStat_;
+    bool complexSpaceState_;
 };
 
 } /* namespace VectorFitting */

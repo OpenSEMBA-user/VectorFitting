@@ -31,6 +31,13 @@ class MathFittingVectorFittingTest : public ::testing::Test {
 
 };
 
+TEST_F(MathFittingVectorFittingTest, ctor) {
+    Options defaultOptions;
+    vector<Sample> noSamples;
+    EXPECT_THROW(VectorFitting::VectorFitting(noSamples, 3, defaultOptions),
+            runtime_error);
+}
+
 // Test first example of Bjorn Gustavsen's code
 TEST_F(MathFittingVectorFittingTest, ex1) {
     // Define samples frequencies
@@ -71,24 +78,46 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     }
 
     // Model fitting
-    VectorFitting::VectorFitting fitting(samples, poles, N);
+    Options opts;
+    opts.setRelax(true);
+    opts.setStable(true);
+    opts.setAsymptoticTrend(Options::linear);
+    opts.setSkipPoleIdentification(false);
+    opts.setSkipResidueIdentification(false);
+    opts.setComplexSpaceState(true);
+
+    VectorFitting::VectorFitting fitting(samples, poles, opts);
     fitting.fit();
 
-    // Compare fitted poles.
+    // Compare poles.
     vector<Complex> obtainedPoles = fitting.getPoles();
     vector<Complex> gustavssenPoles = {
-          Complex(-5.00000000000118,    0.0           ),
-          Complex(-100.000000000017, +499.999999999981),
-          Complex(-100.000000000017, -499.999999999981)
-    };
+            Complex(-5.00000000000118,    0.0           ),
+            Complex(-100.000000000017, +499.999999999981),
+            Complex(-100.000000000017, -499.999999999981)};
     EXPECT_EQ(gustavssenPoles.size(), obtainedPoles.size());
     for (size_t i = 0; i < gustavssenPoles.size(); ++i) {
         ASSERT_NEAR(gustavssenPoles[i].real(), obtainedPoles[i].real(), 1e-8);
         ASSERT_NEAR(gustavssenPoles[i].imag(), obtainedPoles[i].imag(), 1e-8);
     }
 
-    // Compare fitted residues.
+    // Compare residues.
+    Matrix<Complex,Dynamic,Dynamic> obtainedResidues = fitting.getC();
+    Matrix<Complex,Dynamic,Dynamic> gustavssenResidues;
+    gustavssenResidues(0,0)= Complex( 2.0000,   0.0   );
+    gustavssenResidues(0,1)= Complex(30.0000, +40.0000);
+    gustavssenResidues(0,2)= Complex(30.0000, -40.0000);
 
+    EXPECT_EQ(gustavssenResidues.rows(), obtainedResidues.rows());
+    EXPECT_EQ(gustavssenResidues.cols(), obtainedResidues.cols());
+    for (int i = 0; i < gustavssenResidues.rows(); ++i) {
+        for (int j = 0; j < gustavssenResidues.cols(); ++j) {
+            Complex gus = gustavssenResidues(i,j);
+            Complex obt = obtainedResidues(i,j);
+            ASSERT_NEAR(gus.real(), obt.real(), 1e-8);
+            ASSERT_NEAR(gus.imag(), obt.imag(), 1e-8);
+        }
+    }
 
     // Compare fitted samples.
     vector<Sample> obtained;
@@ -311,7 +340,8 @@ TEST_F(MathFittingVectorFittingTest, ex2){
     }
 
     // Model fitting
-    VectorFitting::VectorFitting fitting(samples, startingPoles, N);
+    Options defaults;
+    VectorFitting::VectorFitting fitting(samples, startingPoles, defaults);
     fitting.fit();
 
     // Error check
@@ -370,7 +400,7 @@ TEST_F(MathFittingVectorFittingTest, test) {
 
     // Define samples frequencies
     const size_t nS = 100;
-    vector<VectorFitting::Sample> samples(nS);
+    vector<Sample> samples(nS);
 
     // Compute distribution of the frequencies
     vector<Real> sImag = linspace(pair<Real,Real>(1,1e5), nS);
@@ -425,7 +455,8 @@ TEST_F(MathFittingVectorFittingTest, test) {
     poles.push_back(Complex(-1e3, -1e5));
 
     // Model fitting
-    VectorFitting::VectorFitting fitting(knownResponses, poles, N);
+    Options defaults;
+    VectorFitting::VectorFitting fitting(knownResponses, poles, defaults);
     fitting.fit();
 
     cout << "RMSE: " << fitting.getRMSE() << endl;
