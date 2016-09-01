@@ -27,10 +27,9 @@ namespace VectorFitting {
 Options::Options() {
     relax_ = true;
     stable_ = true;
-    asymptoticTrend_ = constantOnly;
+    asymptoticTrend_ = constant;
     skipPoleIdentification_ = false;
     skipResidueIdentification_ = false;
-    complexSpaceState_ = true;
 }
 
 Options::~Options() {
@@ -43,14 +42,6 @@ Options::AsymptoticTrend Options::getAsymptoticTrend() const {
 void Options::setAsymptoticTrend(
         Options::AsymptoticTrend asymptoticTrend) {
     asymptoticTrend_ = asymptoticTrend;
-}
-
-bool Options::isComplexSpaceState() const {
-    return complexSpaceState_;
-}
-
-void Options::setComplexSpaceState(bool complexSpaceState) {
-    complexSpaceState_ = complexSpaceState;
 }
 
 bool Options::isRelax() const {

@@ -95,7 +95,7 @@ private:
     MatrixXcd  A_,C_;
     RowVectorXcd B_, D_, E_;
 
-    MatrixXd weights_;
+    MatrixXd weights_; // Size: Ns, Nc
 
     void init(const std::vector<Sample>& samples,
               const std::vector<Complex>& poles,

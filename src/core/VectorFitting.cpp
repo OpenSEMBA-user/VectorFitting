@@ -61,21 +61,26 @@ void VectorFitting::init(const std::vector<Sample>& samples,
     samples_ = samples;
     poles_ = poles;
     weights_ = MatrixXd(getSamplesSize(), getResponseSize());
-
-}
-
-VectorFitting::VectorFitting(const std::vector<Sample>& samples,
-                             const std::vector<Complex>& poles,
-                             const Options& options) {
-    if (samples.size() == 0) {
-            throw std::runtime_error("Samples size cannot be zero");
+    for (Int i = 0; i < weights_.rows(); ++i) {
+        for (Int j = 0; j < weights_.cols(); ++j) {
+            weights_(i,j) = (Real) 1.0;
+        }
     }
-     init(samples, poles, options);
+
 }
 
 VectorFitting::VectorFitting(const std::vector<Sample>& samples,
-                             const size_t order,
-                             const Options& options) {
+        const std::vector<Complex>& poles,
+        const Options& options) {
+    if (samples.size() == 0) {
+        throw std::runtime_error("Samples size cannot be zero");
+    }
+    init(samples, poles, options);
+}
+
+VectorFitting::VectorFitting(const std::vector<Sample>& samples,
+        const size_t order,
+        const Options& options) {
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
@@ -145,7 +150,7 @@ void VectorFitting::fit(){
         }
 
         // Builds system - matrix.
-        MatrixXcd Dk(Ns,N);
+        MatrixXcd Dk(Ns,N+2);
         for (size_t m = 0; m < N; ++m) {
             if (cindex(m) == 0) { // Real pole.
                 for (size_t i = 0; i < Ns; ++i) {
@@ -160,10 +165,79 @@ void VectorFitting::fit(){
                 }
             }
         }
-
+        for (size_t i = 0; i < Ns; ++i) {
+            Dk(i,N) = (Real) 1.0;
+            if (options_.getAsymptoticTrend() == Options::linear) {
+                Dk(i,N+1) = samples_[i].first;
+            }
+        }
         // Scaling for last row of LS-problem (pole identification).
+        Real scale = 0.0;
+        for (size_t m = 0; m < Nc; ++m) {
+            for (size_t i = 0; i < Ns; ++i) {
+                const Real weight = weights_(i,m);
+                const Complex sample = samples_[i].second[m];
+                scale += std::pow(std::norm(weight * std::conj(sample)), 2);
+            }
+        }
+        scale = std::sqrt(scale) / (Real) Ns;
 
-    } // End of if for "skip pole identification".
+        if (options_.isRelax()) {
+            MatrixXcd AA(Nc*(N+1), N+1);
+            VectorXcd bb(Nc*(N+1));
+            RowVectorXcd Escale(N+1);
+
+            size_t offs;
+            switch (options_.getAsymptoticTrend()) {
+            case Options::zero:
+                offs = 0;
+                break;
+            case Options::constant:
+                offs = 1;
+                break;
+            case Options::linear:
+                offs = 2;
+                break;
+            }
+            for (size_t n = 0; n < Nc; ++n) {
+                MatrixXcd A(2*Ns, (N+offs)+N+1);
+                VectorXcd weig = weights_.col(n);
+                // Left block.
+                for (size_t m = 0; m < N + offs; ++m) {
+                    for (size_t i = 0; i < Ns; ++i) {
+                        const Complex entry = weig(i) * Dk(i,m);
+                        A(i   ,m) = std::real(entry);
+                        A(i+Ns,m) = std::imag(entry);
+                    }
+                }
+                // Right block.
+                const size_t inda = N + offs;
+                for (size_t m = 0; m < N+1; ++m) {
+                    for (size_t i = 0; i < Ns; ++i) {
+                        const Complex entry =
+                         - weig(i) * Dk(i,m) * std::conj(samples_[i].second[n])
+                        A(i   ,inda+m) = std::real(entry);
+                        A(i+Ns,inda+m) = std::imag(entry);
+                    }
+                }
+
+                // Integral criterion for sigma.
+                const size_t offset = N + offs;
+                if (n == Nc-1) {
+                    for (size_t mm = 0; mm < N+1; ++mm) {
+                        A(2*Ns+1, offset+mm) = std::real(scale*Dk.col(mm).sum());
+                    }
+                }
+                // TODO: --- QR magic ---
+                MatrixXcd Q, R; // TODO
+                //       --- QR magic ---
+                const size_t ind = N + offs;
+                MatrixXcd R22 = R.block(ind,ind,N,N);
+
+            }
+        } // End of if for "relax" flag.
+
+    } // End of if for "skip pole identification" flag.
 
     VectorXcd B(N), SERD(Nc), SERE(Nc);
     RowVectorXcd SERA(1,N);

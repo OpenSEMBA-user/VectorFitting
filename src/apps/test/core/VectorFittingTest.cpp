@@ -84,7 +84,6 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     opts.setAsymptoticTrend(Options::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
-    opts.setComplexSpaceState(true);
 
     VectorFitting::VectorFitting fitting(samples, poles, opts);
     fitting.fit();
