@@ -177,10 +177,6 @@ void VectorFitting::fit(){
         scale = std::sqrt(scale) / (Real) Ns;
 
         if (options_.isRelax()) {
-            MatrixXcd AA(Nc*(N+1), N+1);
-            VectorXcd bb(Nc*(N+1));
-            RowVectorXcd Escale(N+1);
-
             size_t offs;
             switch (options_.getAsymptoticTrend()) {
             case Options::zero:
@@ -193,6 +189,11 @@ void VectorFitting::fit(){
                 offs = 2;
                 break;
             }
+
+            // Computes AA and bb.
+            MatrixXd AA(Nc*(N+1), N+1);
+            VectorXd bb(Nc*(N+1));
+            VectorXd x(Nc*(N+1));
             for (size_t n = 0; n < Nc; ++n) {
                 MatrixXd A(2*Ns+1, (N+offs)+N+1);
                 VectorXd weig(Ns);
@@ -225,14 +226,43 @@ void VectorFitting::fit(){
                         A(2*Ns, offset+mm) = std::real(scale*Dk.col(mm).sum());
                     }
                 }
-                // TODO: --- QR magic ---
-                MatrixXcd Q, R; // TODO
-                //       --- QR magic ---
-                const size_t ind = N + offs;
-                MatrixXcd R22 = R.block(ind,ind,N,N);
 
+                // Performs QR decomposition.
+                MatrixXd Q, R;
+                HouseholderQR<MatrixXd> qr(A.rows(), A.cols());
+                qr.compute(A);
+                Q = qr.householderQ() * MatrixXd::Identity(A.rows(),A.cols());
+                R = Q.transpose() * A;
+
+                const size_t ind = N + offs;
+                MatrixXd R22 = R.block(ind,ind, N+1,N+1);
+                AA.block(n*(N+1), 0, N+1, N+1) = R22;
+                if (n == Nc-1) {
+                    for (size_t i = 0; i < N+1; ++i) {
+                        // FIXME: This is buggy.
+                        bb(i + n*(N+1)) = Q(2*Ns + i, N+offs)
+                                * (Real) Ns * (Real) scale;
+                    }
+                }
+            }  // End of for loop n=1:Nc
+
+            // Computes scaling factor.
+            VectorXd Escale(Nc*(N+1));
+            for (size_t col = 0; col < N+1; ++col) {
+                Escale(col) = 1.0 / AA.col(col).norm();
+                for (size_t i = 0; i < Nc*(N+1); ++i) {
+                    AA(i,col) = Escale(col) * AA(i,col);
+                }
             }
+
+            x = AA.inverse() * bb;
+            for (size_t i = 0; i < Nc*(N+1); ++i) {
+                x(i) *= Escale(i);
+            }
+
         } // End of if for "relax" flag.
+
+        // TODO: If relax is zero or sigma is out of tolerance range.
 
     } // End of if for "skip pole identification" flag.
 
