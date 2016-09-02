@@ -60,13 +60,7 @@ void VectorFitting::init(const std::vector<Sample>& samples,
 
     samples_ = samples;
     poles_ = poles;
-    weights_ = MatrixXd(getSamplesSize(), getResponseSize());
-    for (Int i = 0; i < weights_.rows(); ++i) {
-        for (Int j = 0; j < weights_.cols(); ++j) {
-            weights_(i,j) = (Real) 1.0;
-        }
-    }
-
+    weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
 }
 
 VectorFitting::VectorFitting(const std::vector<Sample>& samples,
@@ -133,7 +127,7 @@ void VectorFitting::fit(){
     // --- Pole identification ---
     if (!options_.isSkipPoleIdentification()) {
         // Finds out which starting poles are complex.
-        RowVectorXi cindex(N);
+        RowVectorXi cindex = RowVectorXi::Zero(N);
         for (size_t m = 0; m < N; ++m) {
             if (!equal(std::imag(LAMBD(m,m)), 0.0)) {
                 if (m == 0) {
@@ -177,7 +171,7 @@ void VectorFitting::fit(){
             for (size_t i = 0; i < Ns; ++i) {
                 const Real weight = weights_(i,m);
                 const Complex sample = samples_[i].second[m];
-                scale += std::pow(std::norm(weight * std::conj(sample)), 2);
+                scale += std::pow(std::abs(weight * std::conj(sample)), 2);
             }
         }
         scale = std::sqrt(scale) / (Real) Ns;
@@ -200,8 +194,11 @@ void VectorFitting::fit(){
                 break;
             }
             for (size_t n = 0; n < Nc; ++n) {
-                MatrixXcd A(2*Ns, (N+offs)+N+1);
-                VectorXcd weig = weights_.col(n);
+                MatrixXd A(2*Ns+1, (N+offs)+N+1);
+                VectorXd weig(Ns);
+                for (size_t i = 0; i < Ns; ++i) {
+                    weig(i) = weights_(i,n);
+                }
                 // Left block.
                 for (size_t m = 0; m < N + offs; ++m) {
                     for (size_t i = 0; i < Ns; ++i) {
@@ -215,7 +212,7 @@ void VectorFitting::fit(){
                 for (size_t m = 0; m < N+1; ++m) {
                     for (size_t i = 0; i < Ns; ++i) {
                         const Complex entry =
-                         - weig(i) * Dk(i,m) * std::conj(samples_[i].second[n])
+                         - weig(i) * Dk(i,m) * samples_[i].second[n];
                         A(i   ,inda+m) = std::real(entry);
                         A(i+Ns,inda+m) = std::imag(entry);
                     }
@@ -225,7 +222,7 @@ void VectorFitting::fit(){
                 const size_t offset = N + offs;
                 if (n == Nc-1) {
                     for (size_t mm = 0; mm < N+1; ++mm) {
-                        A(2*Ns+1, offset+mm) = std::real(scale*Dk.col(mm).sum());
+                        A(2*Ns, offset+mm) = std::real(scale*Dk.col(mm).sum());
                     }
                 }
                 // TODO: --- QR magic ---
