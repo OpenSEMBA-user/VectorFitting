@@ -91,10 +91,14 @@ private:
     std::vector<Sample> samples_;
     VectorXcd poles_;
 
-    MatrixXcd  A_,C_;
-    RowVectorXcd B_, D_, E_;
+    MatrixXcd A_, C_;
+    RowVectorXcd D_, E_;
+    RowVectorXi B_;
 
     MatrixXd weights_; // Size: Ns, Nc
+
+    static constexpr Real toleranceLow_  = 1e-18;
+    static constexpr Real toleranceHigh_ = 1e+18;
 
     void init(const std::vector<Sample>& samples,
               const std::vector<Complex>& poles,

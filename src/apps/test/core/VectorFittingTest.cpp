@@ -101,8 +101,8 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     }
 
     // Compare residues.
-    Matrix<Complex,Dynamic,Dynamic> obtainedResidues = fitting.getC();
-    Matrix<Complex,Dynamic,Dynamic> gustavssenResidues;
+    MatrixXcd obtainedResidues = fitting.getC();
+    MatrixXcd gustavssenResidues(1,3);
     gustavssenResidues(0,0)= Complex( 2.0000,   0.0   );
     gustavssenResidues(0,1)= Complex(30.0000, +40.0000);
     gustavssenResidues(0,2)= Complex(30.0000, -40.0000);
@@ -119,8 +119,7 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     }
 
     // Compare fitted samples.
-    vector<Sample> obtained;
-    obtained = fitting.getFittedSamples(s);
+    vector<Sample> obtained = fitting.getFittedSamples();
 
     vector<Complex> gustavssen = {
         Complex(0.524311630961292, -0.192810298822856),
@@ -230,12 +229,12 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     for (size_t i = 0; i < gustavssen.size(); ++i) {
         EXPECT_FLOAT_EQ(gustavssen[i].real(),
                 obtained[i].second[0].real());
-        EXPECT_FLOAT_EQ(gustavssen[i].real(),
+        EXPECT_FLOAT_EQ(gustavssen[i].imag(),
                 obtained[i].second[0].imag());
     }
 
     // Root Mean Square Error check.
-    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-8);
 }
 
 
@@ -429,9 +428,7 @@ TEST_F(MathFittingVectorFittingTest, test) {
 
 
     // Define starting poles
-    const size_t N = 20;
     vector<Complex> poles;
-
     poles.push_back(Complex(-1e-2, +1.0));
     poles.push_back(Complex(-1e-2, -1.0));
     poles.push_back(Complex(-1.11e2, +1.11e4));
