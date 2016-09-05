@@ -30,8 +30,8 @@ SRC_DIRS := $(SRC_APP_DIR) \
 SRCS_CXX := $(shell find $(SRC_DIRS) -maxdepth 1 -type f -name "*.cpp")
 OBJS_CXX := $(addprefix $(OBJ_DIR), $(SRCS_CXX:.cpp=.o))
 # =============================================================================
-LIBS      += gtest
-LIBRARIES +=
+LIBS      += gtest pthread
+LIBRARIES += 
 INCLUDES  += $(SRC_DIR) $(SRC_DIR)core/
 # =============================================================================
 .PHONY: default print

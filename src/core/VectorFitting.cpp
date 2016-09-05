@@ -37,50 +37,53 @@ struct {
 } sampleOrdering;
 
 // Quick check to see if a Complex number is real
-bool isReal(Complex n, Real tol = 1e-20){ return(abs(n.imag()) < tol); }
+bool isReal(Complex n){
+    return equal(n.imag(), 0.0);
+}
 
+void VectorFitting::init(const std::vector<Sample>& samples,
+                         const std::vector<Complex>& poles,
+                         const Options& options) {
+    options_ = options;
 
-void VectorFitting::init(const vector<Sample>& samples,
-                         const vector<Complex>& poles,
-                         size_t order) {
     // Sanity check: the complex poles should come in pairs; otherwise, there
     // is an error
     Complex currentPole, conjugate;
     for (size_t i = 0; i < poles.size(); i++) {
         currentPole = poles[i];
-        cout << currentPole << endl;
 
         if(!isReal(currentPole)){
-            cout << conj(currentPole) << "\t" << poles[i+1] << endl;
             assert(conj(currentPole) == poles[i+1]);
             i++;
         }
     }
 
-
     samples_ = samples;
-    poles_ = poles;
-    order_ = order;
-    samplesSize_ = samples.size();
-
-    // TODO: do a sanity check to ensure the dimension of f(s_k) for every s_k
-    // is the same.
-    responseSize_ = samples[0].second.size();
+    poles_ = VectorXcd::Zero(poles.size());
+    for (size_t i = 0; i < poles.size(); ++i) {
+        poles_(i) = poles[i];
+    }
+    weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
 }
 
-
-VectorFitting::VectorFitting(const vector<Sample>& samples,
-                             const vector<Complex>& poles,
-                             size_t order) {
-     init(samples, poles, order);
+VectorFitting::VectorFitting(const std::vector<Sample>& samples,
+        const std::vector<Complex>& poles,
+        const Options& options) {
+    if (samples.size() == 0) {
+        throw std::runtime_error("Samples size cannot be zero");
+    }
+    init(samples, poles, options);
 }
 
-
-
-VectorFitting::VectorFitting( const vector<Sample>& samples,
-                              size_t order) {
-    // The startin poles are all complex, so the order has to be even.
-    assert(order % 2 == 0);
+VectorFitting::VectorFitting(const std::vector<Sample>& samples,
+        const size_t order,
+        const Options& options) {
+    if (samples.size() == 0) {
+        throw std::runtime_error("Samples size cannot be zero");
+    }
+    if (order % 2 == 0) {
+        throw std::runtime_error("Default starting poles are complex, order must be even");
+    }
 
     // Define starting poles as a vector of complex conjugates -a + bi with
     // the imaginary part linearly distributed over the frequency range of
@@ -89,20 +92,18 @@ VectorFitting::VectorFitting( const vector<Sample>& samples,
     //      2. realParts = imagParts / 100
 
     // Get range of the samples frequencies:
-    Real min = (*min_element(samples.begin(), samples.end(),
-                sampleOrdering)).first.imag();
-    Real max = (*max_element(samples.begin(), samples.end(),
-                sampleOrdering)).first.imag();
-    pair<Real, Real> range(min, max);
+    Sample minSample = *min_element(samples.begin(), samples.end(), sampleOrdering);
+    Sample maxSample = *max_element(samples.begin(), samples.end(), sampleOrdering);
+    std::pair<Real, Real> range(minSample.first.imag(), maxSample.first.imag());
 
     // Generate the imaginary parts of the initial poles from a linear
     // distribution covering the range in the samples.
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
-    vector<Real> imagParts = linspace(range, order/2);
+    std::vector<Real> imagParts = linspace(range, order/2);
 
     // Generate all the starting poles
-    vector<Complex> poles(order);
+    std::vector<Complex> poles(order);
 
     for (size_t i = 0; i < order; i+=2) {
         Real imag = imagParts[i/2];
@@ -111,325 +112,410 @@ VectorFitting::VectorFitting( const vector<Sample>& samples,
         poles[i+1] = conj(poles[i]);
     }
 
-    init(samples, poles, order);
-}
-
-vector<Complex> VectorFitting::poleIdentification(const vector<Complex>& startingPoles){
-    // Define matrix A following equation (A.3), where:
-    //      s_k = sample[k].first()
-    //      f(s_k) = sample[k].second()
-    //      a_i = starting poles
-    // If a_i, a_{i+1} is a complex conjugate (they always come in pairs;
-    // otherwise, there is an error), the elements have to follow equation
-    // (A.6)
-    // Define column vector B following equation (A.4), where:
-    //      f(s_k) = sample.second()
-
-    int order = startingPoles.size();
-
-    // Number of rows = number of samples
-    // Number of columns = 2* order of approximation + 2
-    MatrixXcd A(samplesSize_, 2*order + 2);
-    VectorXcd B(samplesSize_);
-
-    // TODO: We are dealing only with the first element in f(s_k), so this
-    // is not yet a *vector* fitting.
-    for (size_t k = 0; k < samplesSize_; k++) {
-        Complex s_k = samples_[k].first;
-        Complex f_k = samples_[k].second[0];
-
-        B(k) = f_k;
-
-        for (size_t i = 0; i < order; i++) {
-            Complex a_i = startingPoles[i];
-
-            // Real pole
-            if(isReal(a_i)){
-                A(k, i) = Complex(1.0, 0.0) / (s_k - a_i);
-                A(k, i + order + 2) = -A(k,i) * f_k;
-            }
-            // Complex pair
-            else{
-                // Sanity check
-                assert(conj(a_i) == startingPoles[i+1]);
-
-                A(k,i) =   Complex(1.0, 0.0) / (s_k - a_i) + Complex(1.0, 0.0) / (s_k - conj(a_i));
-                A(k,i+1) = Complex(0.0, 1.0) / (s_k - a_i) - Complex(0.0, 1.0) / (s_k - conj(a_i));
-
-                A(k, i + order + 2)     = -A(k,i) * f_k;
-                A(k, i + order + 2 + 1) = -A(k,i+1) * f_k;
-
-                // FIXME: Ugly, beugh!
-                i++;
-            }
-        }
-
-        A(k, order) = Complex(1.0,0.0);
-        A(k, order+1) = s_k;
-    }
-
-
-    // To follow (A.8) note, it is necessary to build A' and B' as a stack
-    // of the real and imaginary parts of A and B
-    MatrixXd Ap(2*A.rows(), A.cols());
-    VectorXd Bp(2*B.size());
-
-    Ap << A.real(),
-          A.imag();
-
-    Bp << B.real(),
-          B.imag();
-
-    cout << "A:" << endl << Ap << endl;
-    cout << "B:" << endl << Bp << endl;
-
-
-    // Solve A'X = B'. The solution X is the following:
-    //      X[:N] = f residues
-    //      X[N] = d
-    //      X[N+1] = h
-    //      X[N+2:] = sigma residues <- these values are the important ones
-    VectorXd X = Ap.fullPivHouseholderQr().solve(Bp);
-
-    VectorXd sigmaResidues = X.tail(order);
-
-    cout << "residues: " << endl << sigmaResidues << endl;
-
-    // Define a diagonal matrix containing the starting poles, A_, (see B.2)
-    // as follows:
-    //      If a_i is real => A_[i,i] = a_i
-    //      If a_i, a_{i+1} is a complex conjugate =>
-    //          A_[i,i] = A_[i+1, i+1] = real(a_i)
-    //          A_[i,i+1] = imag(a_i)
-    //          A_[i+1,i] = -imag(a_i)
-    // Define a column vector, B_, as follows (see B.2):
-    //      If a_i is real => B_[i] = 1
-    //      If a_i, a_{i+1} is a complex conjugate => B_[i] = 2; B_[i+1] = 0
-    // Define a row vector, C_, as follows:
-    //      If a_i is real => C_[i] = sigma_residues[i] (which is real)
-    //      If a_i, a_{i+1} is a complex conjugate =>
-    //          C_[i] = sigma_residues[i] (which is the real part)
-    //          C_[i+1] = sigma_residues[i+1] (which is the imaginary part)
-
-    MatrixXd A_ = MatrixXd::Zero(order, order);
-    VectorXd B_(order);
-    RowVectorXd C_(sigmaResidues);
-
-    // Populate matrices A_ and B_
-    for (size_t i = 0; i < order; i++) {
-        Complex a_i = startingPoles[i];
-
-        // Real pole
-        if(isReal(a_i)){
-            A_(i,i) = a_i.real();
-            B_(i) = 1.0;
-        }
-        // Complex pole
-        else{
-            // Sanity check
-            assert(conj(a_i) == startingPoles[i+1]);
-
-            A_(i, i) = A_(i+1, i+1) = a_i.real();
-
-            A_(i, i+1) = a_i.imag();
-            A_(i+1, i) = -a_i.imag();
-
-            B_(i) = 2.0;
-            B_(i+1) = 0.0;
-
-            // FIXME: Ugly, beugh!
-            i++;
-        }
-    }
-
-    // Define matrix H = A_ - B_C_, whose eigenvalues are the fitted poles
-    MatrixXd H = A_ - B_*C_;
-
-    // Compute the eigenvalues!
-    EigenSolver<MatrixXd> eigenSolver(H);
-    VectorXcd poles = eigenSolver.eigenvalues();
-
-    // Force unstable poles to be stable
-    for (size_t i = 0; i < poles.size(); i++) {
-        if(poles(i).real() > 0)
-            poles(i) = Complex(-poles(i).real(), poles(i).imag());
-    }
-
-    cout << "POLES:" << endl << poles << endl;
-
-    // Return the fitted poles as a std::vector of Complex
-    return(vector<Complex>(poles.data(),
-                           poles.data() + poles.rows() * poles.cols()));
-}
-
-vector<Complex> VectorFitting::residueIdentification(const vector<Complex>& poles){
-    // Define matrix A following equation (A.3) without the negative terms, where:
-    //      s_k = sample[k].first()
-    //      f(s_k) = sample[k].second()
-    //      a_i = starting poles
-    // If a_i, a_{i+1} is a complex conjugate (they always come in pairs;
-    // otherwise, there is an error), the elements have to follow equation
-    // (A.6)
-    // Define column vector B following equation (A.4), where:
-    //      f(s_k) = sample.second()
-
-    int order = poles.size();
-
-    // Number of rows = number of samples
-    // Number of columns = order of approximation + 2
-    MatrixXcd A(samplesSize_, order + 2);
-    VectorXcd B(samplesSize_);
-
-    // TODO: We are dealing only with the first element in f(s_k), so this
-    // is not yet a *vector* fitting.
-    for (size_t k = 0; k < samplesSize_; k++) {
-        Complex s_k = samples_[k].first;
-        Complex f_k = samples_[k].second[0];
-
-        B(k) = f_k;
-
-        for (size_t i = 0; i < order; i++) {
-            Complex a_i = poles[i];
-
-            // Real pole
-            if(isReal(a_i)){
-                A(k, i) = Complex(1.0, 0.0) / (s_k - a_i);
-            }
-            // Complex pair
-            else{
-                // Sanity check: complex poles must come in pairs
-                assert(conj(a_i) == poles[i+1]);
-
-                A(k,i) =   Complex(1.0, 0.0) / (s_k - a_i) + Complex(1.0, 0.0) / (s_k - conj(a_i));
-                A(k,i+1) = Complex(0.0, 1.0) / (s_k - a_i) - Complex(0.0, 1.0) / (s_k - conj(a_i));
-
-                // FIXME: Ugly, beugh!
-                i++;
-            }
-        }
-
-        A(k, order) = Complex(1.0,0.0);
-        A(k, order+1) = s_k;
-    }
-
-    // To follow (A.8) note, it is necessary to build A' and B' as a stack
-    // of the real and imaginary parts of A and B
-    MatrixXd Ap(2*A.rows(), A.cols());
-    VectorXd Bp(2*B.size());
-
-    Ap << A.real(),
-          A.imag();
-
-    Bp << B.real(),
-          B.imag();
-
-    // Solve A'X = B' (¿by singular value decomposition? Eigen!), whose elements
-    // are:
-    //      X[:N] = f residues
-    //      X[N] = d
-    //      X[N+1] = h
-    VectorXd X = Ap.fullPivHouseholderQr().solve(Bp);
-
-    vector<Complex> residues(order);
-
-    cout << "RESIDUES:" << endl;
-
-    for (size_t i = 0; i < order; i++) {
-        Complex a_i = poles[i];
-
-        // Real pole
-        if(isReal(a_i)){
-            residues[i] = Complex(X(i), 0.0);
-            cout << residues[i] << endl;
-        }
-        // Complex pole
-        else{
-            // Sanity check: complex poles must come in pairs
-            assert(conj(a_i) == poles[i+1]);
-
-            Real real = X(i);
-            Real imag = X(i+1);
-
-            residues[i] = Complex(real, imag);
-            residues[i+1] = Complex(real, -imag);
-            cout << residues[i] << endl;
-            cout << residues[i+1] << endl;
-
-            i++;
-        }
-
-    }
-
-    d_ = X(order);
-    h_ = X(order + 1);
-
-    cout << "PARAMETERS:" << endl;
-    cout << d_ << endl;
-    cout << h_ << endl;
-
-    // Return the fitted residues
-    return(residues);
+    init(samples, poles, options);
 }
 
 void VectorFitting::fit(){
-    // for (size_t i = 0; i < 10; i++) {
-        poles_ = poleIdentification(poles_);
-        residues_ = residueIdentification(poles_);
-    // }
+    // Following Gustavssen notation in vectfit3.m .
+    const size_t Ns = getSamplesSize();
+    const size_t N  = getOrder();
+    const size_t Nc = getResponseSize();
+
+    VectorXcd SERD(Nc), SERE(Nc);
+    VectorXi SERB(N);
+    RowVectorXcd SERA(1,N);
+    MatrixXcd  SERC(Nc, N);
+    for (size_t i = 0; i < N; ++i) {
+        SERA(0,i) = poles_[i];
+    }
+    VectorXcd roetter;
+
+    // --- Pole identification ---
+    if (!options_.isSkipPoleIdentification()) {
+
+        // Finds out which starting poles are complex.
+        RowVectorXi cindex = getCIndex(poles_);
+
+        // Builds system - matrix.
+        MatrixXcd LAMBD(N, N);
+        for (size_t i = 0; i < N; ++i) {
+            LAMBD(i,i) = poles_[i];
+        }
+
+        MatrixXcd Dk(Ns,N+2);
+        MatrixXcd LAMBDprime = LAMBD.transpose().conjugate();
+        for (size_t m = 0; m < N; ++m) {
+            if (cindex(m) == 0) { // Real pole.
+                for (size_t i = 0; i < Ns; ++i) {
+                    Dk(i,m) = Complex(1,0) / (samples_[i].first - LAMBD(m,m));
+                }
+            } else if (cindex(m) == 1) { // Complex pole, first part.
+                for (size_t i = 0; i < Ns; ++i) {
+                    Dk(i,m)   = Complex(1,0) / (samples_[i].first - LAMBD(m,m))
+                               + Complex(1,0) / (samples_[i].first - LAMBDprime(m,m));
+                    Dk(i,m+1) = Complex(0,1) / (samples_[i].first - LAMBD(m,m))
+                               - Complex(0,1) / (samples_[i].first - LAMBDprime(m,m));
+                }
+            }
+        }
+        for (size_t i = 0; i < Ns; ++i) {
+            Dk(i,N) = (Real) 1.0;
+            if (options_.getAsymptoticTrend() == Options::linear) {
+                Dk(i,N+1) = samples_[i].first;
+            }
+        }
+        // Scaling for last row of LS-problem (pole identification).
+        Real scale = 0.0;
+        for (size_t m = 0; m < Nc; ++m) {
+            for (size_t i = 0; i < Ns; ++i) {
+                const Real weight = weights_(i,m);
+                const Complex sample = samples_[i].second[m];
+                scale += std::pow(std::abs(weight * std::conj(sample)), 2);
+            }
+        }
+        scale = std::sqrt(scale) / (Real) Ns;
+
+        VectorXd x(Nc*(N+1));
+
+        if (options_.isRelax()) {
+            size_t offs;
+            switch (options_.getAsymptoticTrend()) {
+            case Options::zero:
+                offs = 0;
+                break;
+            case Options::constant:
+                offs = 1;
+                break;
+            case Options::linear:
+                offs = 2;
+                break;
+            }
+
+            // Computes AA and bb.
+            MatrixXd AA(Nc*(N+1), N+1);
+            VectorXd bb(Nc*(N+1));
+            for (size_t n = 0; n < Nc; ++n) {
+                MatrixXd A(2*Ns+1, (N+offs)+N+1);
+                VectorXd weig(Ns);
+                for (size_t i = 0; i < Ns; ++i) {
+                    weig(i) = weights_(i,n);
+                }
+                // Left block.
+                for (size_t m = 0; m < N + offs; ++m) {
+                    for (size_t i = 0; i < Ns; ++i) {
+                        const Complex entry = weig(i) * Dk(i,m);
+                        A(i   ,m) = std::real(entry);
+                        A(i+Ns,m) = std::imag(entry);
+                    }
+                }
+                // Right block.
+                const size_t inda = N + offs;
+                for (size_t m = 0; m < N+1; ++m) {
+                    for (size_t i = 0; i < Ns; ++i) {
+                        const Complex entry =
+                         - weig(i) * Dk(i,m) * samples_[i].second[n];
+                        A(i   ,inda+m) = std::real(entry);
+                        A(i+Ns,inda+m) = std::imag(entry);
+                    }
+                }
+
+                // Integral criterion for sigma.
+                const size_t offset = N + offs;
+                if (n == Nc-1) {
+                    for (size_t mm = 0; mm < N+1; ++mm) {
+                        A(2*Ns, offset+mm) = std::real(scale*Dk.col(mm).sum());
+                    }
+                }
+
+                // Performs QR decomposition.
+                MatrixXd Q, R;
+                HouseholderQR<MatrixXd> qr(A.rows(), A.cols());
+                qr.compute(A);
+                Q = qr.householderQ() * MatrixXd::Identity(A.rows(),A.cols());
+                R = Q.transpose() * A;
+
+                const size_t ind = N + offs;
+                MatrixXd R22 = R.block(ind,ind, N+1,N+1);
+                AA.block(n*(N+1), 0, N+1, N+1) = R22;
+                if (n == Nc-1) {
+                    for (size_t i = 0; i < N+1; ++i) {
+                        bb(i + n*(N+1)) = Q(2*Ns, N + offs + i)
+                                * (Real) Ns * (Real) scale;
+                    }
+                }
+            }  // End of for loop n=1:Nc
+
+            // Computes scaling factor.
+            VectorXd Escale(Nc*(N+1));
+            for (size_t col = 0; col < N+1; ++col) {
+                Escale(col) = 1.0 / AA.col(col).norm();
+                for (size_t i = 0; i < Nc*(N+1); ++i) {
+                    AA(i,col) = Escale(col) * AA(i,col);
+                }
+            }
+
+            x = AA.inverse() * bb;
+            for (size_t i = 0; i < Nc*(N+1); ++i) {
+                x(i) *= Escale(i);
+            }
+
+        } // End of if for "relax" flag.
+
+        if (!options_.isRelax()
+                || lower  (std::abs(x(0)         ), toleranceLow_)
+                || greater(std::abs(x(Nc*(N+1)-1)), toleranceHigh_) ) {
+            throw std::runtime_error("Option to do not relax is not implemented");
+        }
+
+        VectorXcd C(N);
+        for (int i = 0; i < x.rows()-1; ++i) {
+            C(i) = x(i);
+        }
+        for (size_t m = 0; m < N; ++m) {
+            if (cindex(m) == 1) {
+                const Real r1 = std::real(C(m  ));
+                const Real r2 = std::real(C(m+1));
+                C(m)   = Complex(r1,  r2);
+                C(m+1) = Complex(r1, -r2);
+            }
+        }
+        Real D = x(x.rows()-1);
+
+        // Calculates the zeros for sigma.
+        VectorXi B = VectorXi::Ones(N);
+        size_t m = 0;
+        for (size_t n = 0; n < N; ++n) {
+            if (m < N) {
+                if (greater(std::abs(LAMBD(m,m)),
+                            std::abs(std::real(LAMBD(m,m))))) {
+                    LAMBD(m+1,m  ) = - std::imag(LAMBD(m,m));
+                    LAMBD(m  ,m+1) =   std::imag(LAMBD(m,m));
+                    LAMBD(m  ,m  ) =   std::real(LAMBD(m,m));
+                    LAMBD(m+1,m+1) =             LAMBD(m,m);
+                    B(m  ) = 2;
+                    B(m+1) = 0;
+                    const Real aux = std::real(C(m));
+                    C(m  ) = std::real(aux);
+                    C(m+1) = std::imag(aux);
+                    m++;
+                }
+            }
+            m++;
+        }
+
+        // Checks LAMBD and C are purely real.
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t j = 0; j < N; ++j) {
+                if (!equal(std::imag(LAMBD(i,j)), 0.0)) {
+                    throw std::runtime_error("LAMBD is not purely real");
+                }
+            }
+        }
+        for (size_t i = 0; i < N; ++i) {
+            if (!equal(std::imag(C(i)), 0.0)) {
+                throw std::runtime_error("LAMBD is not purely real");
+            }
+        }
+
+        MatrixXd ZER(N,N);
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t j = 0; j < N; ++j) {
+                ZER(i,j) = std::real(LAMBD(i,j)) -  B(i) * std::real(C(i)) / D;
+            }
+        }
+
+        // Stores roetter
+        roetter = EigenSolver<MatrixXd>(ZER, false).eigenvalues();
+        if (options_.isStable()) {
+            for (size_t i = 0; i < N; ++i) {
+                const Real realPart = std::real(roetter(i));
+                if (greater(realPart, 0.0)) {
+                    roetter(i) = roetter(i) - 2.0 * realPart;
+                }
+            }
+        }
+
+        // TODO Sorterer polene s.a. de reelle kommer first .
+
+        // Stores results for poles.
+        SERA = roetter;
+
+    } // End of if for "skip pole identification" flag.
+
+    // --- Residue identification ---
+    if (!options_.isSkipResidueIdentification()) {
+        // We now calculate SER for f, using the modified zeros of sigma
+        // as new poles.
+        VectorXcd LAMBD = roetter;
+        RowVectorXi cindex = getCIndex(LAMBD);
+
+        // We now calculate the SER for f (new fitting), using the above
+        // calculated zeros as known poles.
+        MatrixXcd Dk(Ns,N);
+        for (size_t m = 0; m < N; ++m) {
+            for (size_t i = 0; i < Ns; ++i) {
+                if (cindex(m) == 0) {
+                    Dk(i,m) = Complex(1,0) / (samples_[i].first - LAMBD(m));
+                } else if (cindex(m) == 1) {
+                    Dk(i,m)   = Complex(1,0) / (samples_[i].first - LAMBD(m))
+                                      + Complex(1,0) / (samples_[i].first - std::conj(LAMBD(m)));
+                    Dk(i,m+1) = Complex(0,1) / (samples_[i].first - LAMBD(m))
+                                      - Complex(0,1) / (samples_[i].first - std::conj(LAMBD(m)));
+                }
+            }
+        }
+
+        MatrixXcd C(Nc, N);
+        VectorXcd BB = VectorXcd::Zero(2*Ns);
+        MatrixXcd A;
+        switch (options_.getAsymptoticTrend()) {
+        case Options::zero:
+            A = MatrixXcd::Zero(2*Ns, N);
+            break;
+        case Options::constant:
+            A = MatrixXcd::Zero(2*Ns, N+1);
+            break;
+        case Options::linear:
+            A = MatrixXcd::Zero(2*Ns, N+2);
+            break;
+        }
+        for (size_t n = 0; n < Nc; ++n) {
+            for (size_t i = 0; i < Ns; ++i) {
+                for (size_t j = 0; j < N; ++j) {
+                    A (i    ,j) =   std::real(Dk(i,j)) * weights_(i,n);
+                    A (i+Ns ,j) =   std::imag(Dk(i,j)) * weights_(i,n);
+                    BB(i)    = std::real(samples_[i].second[n]) * weights_(i,n);
+                    BB(i+Ns) = std::imag(samples_[i].second[n]) * weights_(i,n);
+                }
+            }
+            switch (options_.getAsymptoticTrend()) {
+            case Options::zero:
+                break;
+            case Options::constant:
+                A.block( 0, N, Ns, 1) = MatrixXcd::Ones(Ns, 1);
+                A.block(Ns, N, Ns, 1) = MatrixXcd::Zero(Ns, 1);
+                break;
+            case Options::linear:
+                A.block( 0, N, Ns, 1) = MatrixXcd::Ones(Ns, 1);
+                A.block(Ns, N, Ns, 1) = MatrixXcd::Zero(Ns, 1);
+                for (size_t i = 0; i < Ns; ++i) {
+                    A(i,    N+1) = std::real(samples_[i].first);
+                    A(i+Ns, N+1) = std::imag(samples_[i].first);
+                }
+                break;
+            }
+
+            // Computes scaling factor.
+            VectorXd Escale(A.cols());
+            for (int col = 0; col < A.cols(); ++col) {
+                Escale(col) = A.col(col).norm();
+                for (int i = 0; i < A.rows(); ++i) {
+                    A(i,col) = A(i,col) / Escale(col);
+                }
+            }
+
+            VectorXcd x = (A.transpose() * A).inverse() * A.transpose() * BB;
+            for (int i = 0; i < A.cols(); ++i) {
+                x(i) /= Escale(i);
+            }
+
+            // Stores results for response;
+            for (size_t i = 0; i < N; ++i) {
+                C(n,i) = x(i);
+            }
+            switch (options_.getAsymptoticTrend()) {
+            case Options::zero:
+                break;
+            case Options::constant:
+                SERD(n) = x(N);
+                break;
+            case Options::linear:
+                SERD(n) = x(N);
+                SERE(n) = x(N+1);
+                break;
+            }
+        } // End of loop over Nc responses.
+
+        for (size_t m = 0; m < N; ++m) {
+            if (cindex(m) == 1) {
+                for (size_t n = 0; n < Nc; ++n) {
+                    const Real r1 = std::real(C(n, m  ));
+                    const Real r2 = std::real(C(n, m+1));
+                    C(n, m  ) = Complex(r1,  r2);
+                    C(n, m+1) = Complex(r1, -r2);
+                }
+            }
+        }
+
+        SERA = LAMBD;
+        SERB = VectorXi::Ones(N);
+        SERC = C;
+    } // End of if for "skip residue identification" flag.
+
+    A_ = MatrixXcd::Zero(N,N);
+    for (size_t i = 0; i < N; ++i) {
+        A_(i,i) = SERA(i);
+    }
+    poles_ = SERA.transpose();
+    if (!options_.isSkipResidueIdentification()) {
+        B_ = SERB;
+        C_ = SERC;
+        D_ = SERD;
+        E_ = SERE;
+    } else {
+        B_ = VectorXi::Ones(N);
+        C_ = MatrixXcd::Zero(Nc, N);
+        D_ = MatrixXcd::Zero(Nc, Nc);
+        E_ = MatrixXcd::Zero(Nc, Nc);
+    }
 }
 
 // Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
 // computed with the model in (2)
-vector<Sample> VectorFitting::getFittedSamples(vector<Complex> freqs) const {
-    // Vector to store the fitted samples
-    vector<Sample> fittedSamples(freqs.size());
+std::vector<Sample> VectorFitting::getFittedSamples() const {
+    const size_t N  = getOrder();
+    const size_t Ns = getSamplesSize();
+    const size_t Nc = getResponseSize();
 
-    for (size_t k = 0; k < freqs.size(); k++) {
-        // Independent variable s
-        Complex sk = freqs[k];
-
-        // Response of the model
-        vector<Complex> response = predictResponse(sk);
-
-        // Building of the sample
-        fittedSamples[k] = Sample(sk, response);
-    }
-
-    return fittedSamples;
-}
-
-// TODO: This is slowly becoming a vector fitting
-vector<Complex> VectorFitting::predictResponse(Complex freq) const {
-    // Computation of the response with the fitted model (see (2))
-    vector<Complex> response(responseSize_);
-
-    for (size_t i = 0; i < responseSize_; i++) {
-        response[i] = Complex(0,0);
-
-        for (size_t n = 0; n < order_; n++) {
-            Complex an = poles_[n];
-            //TODO: residues should be different for every element in the
-            //response; e.g. residues_[i][n].
-            Complex cn = residues_[n];
-
-            response[i] += cn / (freq - an);
+    MatrixXcd Dk(Ns,N);
+    for (size_t m = 0; m < N; ++m) {
+        for (size_t i = 0; i < Ns; ++i) {
+            Dk(i,m) = Complex(1.0, 0) / (samples_[i].first - A_(m,m));
         }
-
-        // d_ and h_ should have responseSize_ elements; e.g., d_[i], h_[i];
-        response[i] += d_ + freq * h_;
     }
 
-    return response;
+    std::vector<Sample> res(
+            Ns, Sample(Complex(0.0,0.0), std::vector<Complex>(Nc)));
+    for (size_t n = 0; n < Nc; ++n) {
+        VectorXcd fit(Ns);
+        fit = Dk * C_.transpose();
+        switch (options_.getAsymptoticTrend()) {
+        case Options::zero:
+            break;
+        case Options::constant:
+            for (size_t i = 0; i < Ns; ++i) {
+                fit(i) += D_(n);
+            }
+            break;
+        case Options::linear:
+            for (size_t i = 0; i < Ns; ++i) {
+                fit(i) += D_(n) + samples_[i].first * E_(n);
+            }
+        }
+        for (size_t i = 0; i < Ns; ++i) {
+            res[i].first = samples_[i].first;
+            res[i].second[n] = fit[i];
+        }
+    }
+    return res;
 }
 
-vector<complex<Real>> VectorFitting::getPoles() {
-    // assert(computed_ == true);
-    return poles_;
-}
-
-vector<complex<Real>> VectorFitting::getResidues() {
-    // assert(computed_ == true);
-    return residues_;
+std::vector<Complex> VectorFitting::getPoles() {
+    std::vector<Complex> res(poles_.rows());
+    for (int i = 0; i < poles_.rows(); ++i) {
+        res[i] = poles_[i];
+    }
+    return res;
 }
 
 /**
@@ -438,29 +524,21 @@ vector<complex<Real>> VectorFitting::getResidues() {
  * @return Real - Root mean square error of the model.
  */
 Real VectorFitting::getRMSE() {
-    vector<Sample> actualSamples = samples_;
-
-    // Retrieve the frequencies from the samples
-    vector<Complex> frequencies(actualSamples.size());
-    for (size_t k = 0; k < actualSamples.size(); k++) {
-        frequencies[k] = actualSamples[k].first;
-    }
-
-    // Get the fitted samples
-    vector<Sample> fittedSamples = getFittedSamples(frequencies);
+    std::vector<Sample> originalSamples = samples_;
+    std::vector<Sample> fittedSamples = getFittedSamples();
 
     Real error = 0.0;
     Complex actual, fitted, diff;
 
     // Compute the error between the real responses and the fitted ones
-    for (size_t i = 0; i < samplesSize_; i++) {
+    for (size_t i = 0; i < getSamplesSize(); i++) {
         // Sanity check: the response should be on the *same* frequency
-        assert(actualSamples[i].first == fittedSamples[i].first);
+        assert(originalSamples[i].first == fittedSamples[i].first);
 
         // Iterate through all the responses in the vector of each sample
-        for (size_t j = 0; j < actualSamples[i].second.size(); j++) {
+        for (size_t j = 0; j < originalSamples[i].second.size(); j++) {
             // Retrieve the actual and fitted responses
-            actual = actualSamples[i].second[j];
+            actual = originalSamples[i].second[j];
             fitted = fittedSamples[i].second[j];
 
             diff = actual - fitted;
@@ -469,7 +547,42 @@ Real VectorFitting::getRMSE() {
         }
     }
 
-    return sqrt(error/(samplesSize_*responseSize_));
+    return sqrt(error/(getSamplesSize()*getResponseSize()));
+}
+
+size_t VectorFitting::getSamplesSize() const {
+    return samples_.size();
+}
+
+size_t VectorFitting::getResponseSize() const {
+    assert(samples_.size() > 0);
+    return samples_.front().second.size();
+}
+
+size_t VectorFitting::getOrder() const {
+    return (size_t) poles_.rows();
+}
+
+RowVectorXi VectorFitting::getCIndex(const VectorXcd& poles) {
+    const size_t N = poles.rows();
+    RowVectorXi cindex = RowVectorXi::Zero(N);
+    for (size_t m = 0; m < N; ++m) {
+        if (!equal(std::imag(poles(m)), 0.0)) {
+            if (m == 0) {
+                cindex(m) = 1;
+            } else {
+                if (cindex(m-1) == 0 || cindex(m-1) == 2) {
+                    cindex(m) = 1;
+                    cindex(m+1) = 2;
+                } else {
+                    cindex(m) = 2;
+                }
+            }
+        }
+    }
+    return cindex;
 }
 
 } /* namespace VectorFitting */
+
+

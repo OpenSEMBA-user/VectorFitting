@@ -27,17 +27,22 @@
 #include <complex>
 #include <eigen3/Eigen/Dense>
 
-#include "Types.h"
+#include "Real.h"
+#include "Options.h"
 
 namespace VectorFitting {
 
 using namespace Eigen;
-using namespace std;
 
-typedef complex<Real> Complex;
-typedef pair<Complex, vector<Complex>> Sample;
+typedef std::complex<Real> Complex;
 
-// TODO: manage options in constructor.
+/**
+ * Samples are formed by a pair formed by:
+ *  - First, the parameter $s = j \omega$ a purely imaginary number.
+ *  - Second, a vector with the complex data to be fitted.
+ */
+typedef std::pair<Complex, std::vector<Complex>> Sample;
+
 class VectorFitting {
 public:
 
@@ -45,71 +50,65 @@ public:
      * Build a fitter with starting poles computed automatically.
      * @param samples   Data to be fitted.
      * @param order     Order of approximation.
+     * @param options   Options.
      */
-    VectorFitting(const vector<Sample>& samples, size_t order);
+    VectorFitting(
+            const std::vector<Sample>& samples,
+            const size_t order,
+            const Options& options);
 
     /**
      * Build a fitter with starting poles provided by the user. order_ and
      * poles.size() shall be the same
      * @param samples   Data to be fitted.
-     * @param poles     Starting poles
-     * @param order     Order of approximation.
+     * @param poles     Starting poles.
+     * @param options   Options.
      */
-    VectorFitting(const vector<Sample>& samples, const vector<Complex>& poles,
-                  size_t order);
+    VectorFitting(const std::vector<Sample>& samples,
+                  const std::vector<Complex>& poles,
+                  const Options& options);
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
     void fit();
 
-    vector<Complex> predictResponse(Complex freq) const;
-    vector<Sample> getFittedSamples(vector<Complex> freqs) const;
-    vector<Complex> getPoles();
-    vector<Complex> getResidues();
+    std::vector<Sample>  getFittedSamples() const;
+    std::vector<Complex> getPoles();
+
+    /**
+     *  Getters to fitting coefficents.
+     */
+    VectorXcd getA() {return A_;}    // Size: N, 1.
+    MatrixXcd getC() {return C_;}    // Size: Nc, N.
+    RowVectorXi getB() {return B_;}  // Size: 1,  N.
+    MatrixXcd getD() {return D_;}    // Size: Nc, Nc.
+    MatrixXcd getE() {return E_;}    // Size: Nc, Nc.
     Real getRMSE();
 
 private:
-    vector<Sample> samples_;
+    Options options_;
 
-    vector<Complex> poles_, residues_;
+    std::vector<Sample> samples_;
+    VectorXcd poles_;
 
-    Real d_, h_;
+    MatrixXcd A_, C_;
+    RowVectorXcd D_, E_;
+    RowVectorXi B_;
 
-    Matrix<Complex,Dynamic,Dynamic>  A_, C_;
-    vector<Real>  B_, D_, E_;
+    MatrixXd weights_; // Size: Ns, Nc
 
-    // Order of approximation
-    size_t order_;
+    static constexpr Real toleranceLow_  = 1e-18;
+    static constexpr Real toleranceHigh_ = 1e+18;
 
-    // Number of elements in the response vector; i.e., dimension of f(s_k)
-    size_t responseSize_;
+    void init(const std::vector<Sample>& samples,
+              const std::vector<Complex>& poles,
+              const Options& options);
 
-    // Number of samples; i.e., size of samples_
-    size_t samplesSize_;
+    size_t getSamplesSize() const;
+    size_t getResponseSize() const;
+    size_t getOrder() const;
 
-    void init(const vector<Sample>& samples, const vector<Complex>& poles,
-              size_t order);
-
-    /**
-     * Perfoms the first stage of the algorithm: given a set of starting
-     * poles, it returns the new fitted poles.
-     * @param startingPoles Vector of complex numbers (Real as its base
-     *                      type) containing the starting poles.
-     * @return A vector of complex numbers with Real as its base type
-     *           containing the fitted poles. This set of poles should
-     *           be used to feed the residue identification method.
-     */
-    vector<Complex> poleIdentification(const vector<Complex>& startingPoles);
-
-    /**
-     * Perfoms the second stage of the algorithm: given a set of known
-     * poles, it returns the new fitted residues.
-     * @param poles Vector of complex numbers (Real as its base type)
-     *              containing the known poles.
-     * @return A vector of complex numbers with Real as its base type
-     *           containing the fitted residues.
-     */
-    vector<Complex> residueIdentification(const vector<Complex>& poles);
+    static RowVectorXi getCIndex(const VectorXcd& poles);
 };
 
 } /* namespace VectorFitting */
