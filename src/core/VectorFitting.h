@@ -78,12 +78,12 @@ public:
     /**
      *  Getters to fitting coefficents.
      */
-    VectorXcd getA() {return A_;}    // Size: N, 1.
+    MatrixXcd getA() {return A_;}    // Size:  N, N.
     MatrixXcd getC() {return C_;}    // Size: Nc, N.
-    RowVectorXi getB() {return B_;}  // Size: 1,  N.
-    MatrixXcd getD() {return D_;}    // Size: Nc, Nc.
-    MatrixXcd getE() {return E_;}    // Size: Nc, Nc.
-    Real getRMSE();
+    RowVectorXi getB() {return B_;}  // Size:  1, N.
+    VectorXcd getD() {return D_;}    // Size:  1, Nc.
+    VectorXcd getE() {return E_;}    // Size:  1, Nc.
+    Real getRMSE() const;
 
 private:
     Options options_;
@@ -92,7 +92,7 @@ private:
     VectorXcd poles_;
 
     MatrixXcd A_, C_;
-    RowVectorXcd D_, E_;
+    VectorXcd D_, E_;
     RowVectorXi B_;
 
     MatrixXd weights_; // Size: Ns, Nc

@@ -246,7 +246,7 @@ void VectorFitting::fit(){
             }  // End of for loop n=1:Nc
 
             // Computes scaling factor.
-            VectorXd Escale(Nc*(N+1));
+            VectorXd Escale(N+1);
             for (size_t col = 0; col < N+1; ++col) {
                 Escale(col) = 1.0 / AA.col(col).norm();
                 for (size_t i = 0; i < Nc*(N+1); ++i) {
@@ -254,16 +254,16 @@ void VectorFitting::fit(){
                 }
             }
 
-            x = AA.inverse() * bb;
-            for (size_t i = 0; i < Nc*(N+1); ++i) {
+            x = (AA.transpose() * AA).inverse() * AA.transpose() * bb; // FIXME: Buggy.
+            for (size_t i = 0; i < N+1; ++i) {
                 x(i) *= Escale(i);
             }
 
         } // End of if for "relax" flag.
 
         if (!options_.isRelax()
-                || lower  (std::abs(x(0)         ), toleranceLow_)
-                || greater(std::abs(x(Nc*(N+1)-1)), toleranceHigh_) ) {
+                || lower  (std::abs(x(0)), toleranceLow_)
+                || greater(std::abs(x(N)), toleranceHigh_) ) {
             throw std::runtime_error("Option to do not relax is not implemented");
         }
 
@@ -465,8 +465,8 @@ void VectorFitting::fit(){
     } else {
         B_ = VectorXi::Ones(N);
         C_ = MatrixXcd::Zero(Nc, N);
-        D_ = MatrixXcd::Zero(Nc, Nc);
-        E_ = MatrixXcd::Zero(Nc, Nc);
+        D_ = VectorXcd::Zero(Nc);
+        E_ = VectorXcd::Zero(Nc);
     }
 }
 
@@ -488,7 +488,7 @@ std::vector<Sample> VectorFitting::getFittedSamples() const {
             Ns, Sample(Complex(0.0,0.0), std::vector<Complex>(Nc)));
     for (size_t n = 0; n < Nc; ++n) {
         VectorXcd fit(Ns);
-        fit = Dk * C_.transpose();
+        fit = Dk * C_;
         switch (options_.getAsymptoticTrend()) {
         case Options::zero:
             break;
@@ -523,8 +523,7 @@ std::vector<Complex> VectorFitting::getPoles() {
  * square of the estimated data with respect to the samples.
  * @return Real - Root mean square error of the model.
  */
-Real VectorFitting::getRMSE() {
-    std::vector<Sample> originalSamples = samples_;
+Real VectorFitting::getRMSE() const {
     std::vector<Sample> fittedSamples = getFittedSamples();
 
     Real error = 0.0;
@@ -533,12 +532,12 @@ Real VectorFitting::getRMSE() {
     // Compute the error between the real responses and the fitted ones
     for (size_t i = 0; i < getSamplesSize(); i++) {
         // Sanity check: the response should be on the *same* frequency
-        assert(originalSamples[i].first == fittedSamples[i].first);
+        assert(samples_[i].first == fittedSamples[i].first);
 
         // Iterate through all the responses in the vector of each sample
-        for (size_t j = 0; j < originalSamples[i].second.size(); j++) {
+        for (size_t j = 0; j < samples_[i].second.size(); j++) {
             // Retrieve the actual and fitted responses
-            actual = originalSamples[i].second[j];
+            actual = samples_[i].second[j];
             fitted = fittedSamples[i].second[j];
 
             diff = actual - fitted;
