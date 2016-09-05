@@ -72,25 +72,24 @@ public:
     // is preferred, it's a good idea to have it as a public method
     void fit();
 
-    std::vector<Complex> predictResponse(Complex freq) const;
-    std::vector<Sample>  getFittedSamples(std::vector<Complex> freqs) const;
+    std::vector<Sample>  getFittedSamples() const;
     std::vector<Complex> getPoles();
 
     /**
      *  Getters to fitting coefficents.
      */
-    MatrixXcd getA() {return A_;}    // Size: Nc, N.
+    VectorXcd getA() {return A_;}    // Size: N, 1.
     MatrixXcd getC() {return C_;}    // Size: Nc, N.
-    RowVectorXcd getB() {return B_;} // Size: N,  1.
-    RowVectorXcd getD() {return D_;} // Size: Nc, 1.
-    RowVectorXcd getE() {return E_;} // Size: Nc, 1.
+    RowVectorXi getB() {return B_;}  // Size: 1,  N.
+    MatrixXcd getD() {return D_;}    // Size: Nc, Nc.
+    MatrixXcd getE() {return E_;}    // Size: Nc, Nc.
     Real getRMSE();
 
 private:
     Options options_;
 
     std::vector<Sample> samples_;
-    std::vector<Complex> poles_;
+    VectorXcd poles_;
 
     MatrixXcd  A_,C_;
     RowVectorXcd B_, D_, E_;
@@ -104,6 +103,8 @@ private:
     size_t getSamplesSize() const;
     size_t getResponseSize() const;
     size_t getOrder() const;
+
+    static RowVectorXi getCIndex(const VectorXcd& poles);
 };
 
 } /* namespace VectorFitting */
