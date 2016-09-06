@@ -41,12 +41,14 @@ public:
     bool isSkipPoleIdentification() const;
     bool isSkipResidueIdentification() const;
     bool isStable() const;
+    bool isComplexSpaceState() const;
 
     void setAsymptoticTrend(AsymptoticTrend asymptoticTrend);
     void setRelax(bool relax);
     void setSkipPoleIdentification(bool skipPoleIdentification);
     void setSkipResidueIdentification(bool skipResidueIdentification);
     void setStable(bool stable);
+    void setComplexSpaceState(bool complexSpaceState);
 
 private:
     bool relax_;
@@ -54,6 +56,7 @@ private:
     AsymptoticTrend asymptoticTrend_;
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
+    bool complexSpaceState_;
 };
 
 } /* namespace VectorFitting */

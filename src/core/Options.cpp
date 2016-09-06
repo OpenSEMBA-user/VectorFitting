@@ -25,11 +25,12 @@
 namespace VectorFitting {
 
 Options::Options() {
-    relax_ = true;
-    stable_ = true;
-    asymptoticTrend_ = constant;
-    skipPoleIdentification_ = false;
+    relax_                     = true;
+    stable_                    = true;
+    asymptoticTrend_           = constant;
+    skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
+    complexSpaceState_         = true;
 }
 
 Options::~Options() {
@@ -79,3 +80,11 @@ void Options::setStable(bool stable) {
 }
 
 } /* namespace VectorFitting */
+
+bool VectorFitting::Options::isComplexSpaceState() const {
+    return complexSpaceState_;
+}
+
+void VectorFitting::Options::setComplexSpaceState(bool complexSpaceState) {
+    complexSpaceState_ = complexSpaceState;
+}

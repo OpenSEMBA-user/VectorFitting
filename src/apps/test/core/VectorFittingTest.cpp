@@ -38,232 +38,6 @@ TEST_F(MathFittingVectorFittingTest, ctor) {
             runtime_error);
 }
 
-TEST_F(MathFittingVectorFittingTest, ex2){
-    // Order of approximation
-    const int N = 18;
-
-    // Number of samples
-    const int Ns = 100;
-
-    Real D = 0.2;
-    Real E = 2e-5;
-
-    vector<Complex> p = {
-            Complex(-4.5e+03,   0.0    ),
-            Complex(-4.1e+04,   0.0    ),
-            Complex(-1.0e+02, - 5.0e+03),
-            Complex(-1.0e+02, + 5.0e+03),
-            Complex(-1.2e+02, - 1.5e+04),
-            Complex(-1.2e+02, + 1.5e+04),
-            Complex(-3.0e+03, - 3.5e+04),
-            Complex(-3.0e+03, + 3.5e+04),
-            Complex(-2.0e+02, - 4.5e+04),
-            Complex(-2.0e+02, + 4.5e+04),
-            Complex(-1.5e+03, - 4.5e+04),
-            Complex(-1.5e+03, + 4.5e+04),
-            Complex(-5.0e+02, - 7.0e+04),
-            Complex(-5.0e+02, + 7.0e+04),
-            Complex(-1.0e+03, - 7.3e+04),
-            Complex(-1.0e+03, + 7.3e+04),
-            Complex(-2.0e+03, - 9.0e+04),
-            Complex(-2.0e+03, + 9.0e+04)};
-
-
-    vector<Complex> r = {
-            Complex(-3.0e+03,   0.0    ),
-            Complex(-8.3e+04,   0.0    ),
-            Complex(-5.0e+00, - 7.0e+03),
-            Complex(-5.0e+00, + 7.0e+03),
-            Complex(-2.0e+01, - 1.8e+04),
-            Complex(-2.0e+01, + 1.8e+04),
-            Complex( 6.0e+03, - 4.5e+04),
-            Complex( 6.0e+03, + 4.5e+04),
-            Complex( 4.0e+01, - 6.0e+04),
-            Complex( 4.0e+01, + 6.0e+04),
-            Complex( 9.0e+01, - 1.0e+04),
-            Complex( 9.0e+01, + 1.0e+04),
-            Complex( 5.0e+04, - 8.0e+04),
-            Complex( 5.0e+04, + 8.0e+04),
-            Complex( 1.0e+03, - 4.5e+04),
-            Complex( 1.0e+03, + 4.5e+04),
-            Complex(-5.0e+03, - 9.2e+04),
-            Complex(-5.0e+03, + 9.2e+04)};
-
-    for (size_t i = 0; i < N; i++) {
-        p[i] *= 2.0 * M_PI;
-        r[i] *= 2.0 * M_PI;
-    }
-
-    vector<Real> w = linspace(pair<Real, Real>(1, 1e5), Ns);
-
-    // Frequencies
-    vector<Complex> s(Ns);
-
-    // Samples
-    vector<Sample> samples(Ns);
-
-    // Build samples
-    for (size_t k = 0; k < Ns; k++) {
-        // Build frequencies
-        w[k] *= 2.0 * M_PI;
-        s[k] = Complex(0.0, w[k]);
-
-        // Initialize responses to zero
-        vector<Complex> f(2, 0.0);
-
-        // Compute responses with the model
-        for (size_t n = 0; n < N; n++) {
-            if(n < 10)
-                f[0] += r[n] / (s[k] - p[n]);
-            if(n >= 8)
-                f[1] += r[n] / (s[k] - p[n]);
-        }
-        f[0] += s[k] * E + D + 2.0*D;
-        f[1] += s[k] * 3.0*E; // Misleading in Ex2 of Gustavssen.
-
-        // Add pair frequency-response
-        samples[k] = Sample(s[k], f);
-    }
-
-    // Starting poles
-    vector<Complex> startingPoles;
-
-    // Imaginary parts
-    vector<Real> beta = linspace(pair<Real,Real>(w.front(), w.back()), N/2);
-    for (size_t n = 0; n < N/2; n++) {
-        // Real part
-        Real alpha = -beta[n]*1e-2;
-
-        startingPoles.push_back(Complex(alpha, -beta[n]));
-        startingPoles.push_back(Complex(alpha,  beta[n]));
-    }
-
-    // Model fitting
-    Options opts;
-    opts.setRelax(true);
-    opts.setStable(true);
-    opts.setAsymptoticTrend(Options::linear);
-    opts.setSkipPoleIdentification(false);
-    opts.setSkipResidueIdentification(true);
-
-    VectorFitting::VectorFitting fitting(samples, startingPoles, opts);
-    fitting.fit();
-
-    // Error check
-    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
-
-}
-
-// Test Gustavsen's 1999 paper example described in section 4
-TEST_F(MathFittingVectorFittingTest, test) {
-    // Known poles
-    vector<Complex> knownPoles;
-    knownPoles.push_back(Complex(-4500, 0.0));
-    knownPoles.push_back(Complex(-41000, 0.0));
-    knownPoles.push_back(Complex(-100, +5000));
-    knownPoles.push_back(Complex(-100, -5000));
-    knownPoles.push_back(Complex(-120, +15000));
-    knownPoles.push_back(Complex(-120, -15000));
-    knownPoles.push_back(Complex(-3000, +35000));
-    knownPoles.push_back(Complex(-3000, -35000));
-    knownPoles.push_back(Complex(-200, +45000));
-    knownPoles.push_back(Complex(-200, -45000));
-    knownPoles.push_back(Complex(-1500, +45000));
-    knownPoles.push_back(Complex(-1500, -45000));
-    knownPoles.push_back(Complex(-500, +70000));
-    knownPoles.push_back(Complex(-500, -70000));
-    knownPoles.push_back(Complex(-1000, +73000));
-    knownPoles.push_back(Complex(-1000, -73000));
-    knownPoles.push_back(Complex(-2000, +90000));
-    knownPoles.push_back(Complex(-2000,-90000));
-
-    // Known residues
-    vector<Complex> knownResidues;
-    knownResidues.push_back(Complex(-3000, 0.0));
-    knownResidues.push_back(Complex(-83000, 0.0));
-    knownResidues.push_back(Complex(-5, +7000));
-    knownResidues.push_back(Complex(-5, -7000));
-    knownResidues.push_back(Complex(-20, +18000));
-    knownResidues.push_back(Complex(-20, -18000));
-    knownResidues.push_back(Complex(6000, +45000));
-    knownResidues.push_back(Complex(6000, -45000));
-    knownPoles.push_back(Complex(40, +60000));
-    knownPoles.push_back(Complex(40, -60000));
-    knownPoles.push_back(Complex(90, +10000));
-    knownPoles.push_back(Complex(90, -10000));
-    knownPoles.push_back(Complex(50000, +80000));
-    knownPoles.push_back(Complex(50000, -80000));
-    knownPoles.push_back(Complex(1000, +45000));
-    knownPoles.push_back(Complex(1000, -45000));
-    knownPoles.push_back(Complex(-5000, +92000));
-    knownPoles.push_back(Complex(-5000, -92000));
-
-    // Known parameters
-    Real knownD = 0.2;
-    Real knownH = 2e-5;
-
-    // Define samples frequencies
-    const size_t nS = 100;
-    vector<Sample> samples(nS);
-
-    // Compute distribution of the frequencies
-    vector<Real> sImag = linspace(pair<Real,Real>(1,1e5), nS);
-
-    // Vector to store the fitted samples and loop variable
-    vector<Sample> knownResponses(nS);
-
-    for (size_t k = 0; k < nS; k++) {
-        // Independent variable s
-        Complex sk = Complex(0.0, 2 * M_PI * sImag[k]);
-
-        // Computation of the dependent variable f(s) with the model (see (2))
-        vector<Complex> f(1);
-        f[0] = Complex(0,0);
-
-        for (size_t n = 0; n < knownPoles.size(); n++) {
-            Complex cn = knownResidues[n];
-            Complex an = knownPoles[n];
-
-            f[0] += cn / (sk - an);
-        }
-
-        f[0] += knownD + sk * knownH;
-
-        knownResponses[k] = Sample(sk, f);
-    }
-
-    // Define starting poles
-    vector<Complex> poles;
-    poles.push_back(Complex(-1e-2, +1.0));
-    poles.push_back(Complex(-1e-2, -1.0));
-    poles.push_back(Complex(-1.11e2, +1.11e4));
-    poles.push_back(Complex(-1.11e2, -1.11e4));
-    poles.push_back(Complex(-2.22e2, +2.22e4));
-    poles.push_back(Complex(-2.22e2, -2.22e4));
-    poles.push_back(Complex(-3.33e2, +3.33e4));
-    poles.push_back(Complex(-3.33e2, -3.33e4));
-    poles.push_back(Complex(-4.44e2, +4.44e4));
-    poles.push_back(Complex(-4.44e2, -4.44e4));
-    poles.push_back(Complex(-5.55e2, +5.55e4));
-    poles.push_back(Complex(-5.55e2, -5.55e4));
-    poles.push_back(Complex(-6.66e2, +6.66e4));
-    poles.push_back(Complex(-6.66e2, -6.66e4));
-    poles.push_back(Complex(-7.77e2, +7.77e4));
-    poles.push_back(Complex(-7.77e2, -7.77e4));
-    poles.push_back(Complex(-8.88e2, +8.88e4));
-    poles.push_back(Complex(-8.88e2, -8.88e4));
-    poles.push_back(Complex(-1e3, +1e5));
-    poles.push_back(Complex(-1e3, -1e5));
-
-    // Model fitting
-    Options defaults;
-    VectorFitting::VectorFitting fitting(knownResponses, poles, defaults);
-    fitting.fit();
-
-    // Error check
-    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
-}
-
 // Test first example of Bjorn Gustavsen's code
 TEST_F(MathFittingVectorFittingTest, ex1) {
     // Define samples frequencies
@@ -310,6 +84,7 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     opts.setAsymptoticTrend(Options::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
+    opts.setComplexSpaceState(true);
 
     VectorFitting::VectorFitting fitting(samples, poles, opts);
     fitting.fit();
@@ -322,8 +97,8 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
             Complex(-100.000000000017, -499.999999999981)};
     EXPECT_EQ(gustavssenPoles.size(), obtainedPoles.size());
     for (size_t i = 0; i < gustavssenPoles.size(); ++i) {
-        ASSERT_NEAR(gustavssenPoles[i].real(), obtainedPoles[i].real(), 1e-8);
-        ASSERT_NEAR(gustavssenPoles[i].imag(), obtainedPoles[i].imag(), 1e-8);
+        EXPECT_NEAR(gustavssenPoles[i].real(), obtainedPoles[i].real(), 1e-6);
+        EXPECT_NEAR(gustavssenPoles[i].imag(), obtainedPoles[i].imag(), 1e-6);
     }
 
     // Compare residues.
@@ -339,8 +114,8 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
         for (int j = 0; j < gustavssenResidues.cols(); ++j) {
             Complex gus = gustavssenResidues(i,j);
             Complex obt = obtainedResidues(i,j);
-            ASSERT_NEAR(gus.real(), obt.real(), 1e-8);
-            ASSERT_NEAR(gus.imag(), obt.imag(), 1e-8);
+            EXPECT_NEAR(gus.real(), obt.real(), 1e-6);
+            EXPECT_NEAR(gus.imag(), obt.imag(), 1e-6);
         }
     }
 
@@ -453,14 +228,240 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
 
     EXPECT_EQ(gustavssen.size(), obtained.size());
     for (size_t i = 0; i < gustavssen.size(); ++i) {
-        EXPECT_FLOAT_EQ(gustavssen[i].real(),
-                obtained[i].second[0].real());
-        EXPECT_FLOAT_EQ(gustavssen[i].imag(),
-                obtained[i].second[0].imag());
+        EXPECT_NEAR(gustavssen[i].real(), obtained[i].second[0].real(), 1e-6);
+        EXPECT_NEAR(gustavssen[i].imag(), obtained[i].second[0].imag(), 1e-6);
     }
 
     // Root Mean Square Error check.
     EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-8);
+}
+
+
+TEST_F(MathFittingVectorFittingTest, ex2){
+    // Order of approximation
+    const int N = 18;
+
+    // Number of samples
+    const int Ns = 100;
+
+    Real D = 0.2;
+    Real E = 2e-5;
+
+    vector<Complex> p = {
+            Complex(-4.5e+03,   0.0    ),
+            Complex(-4.1e+04,   0.0    ),
+            Complex(-1.0e+02, - 5.0e+03),
+            Complex(-1.0e+02, + 5.0e+03),
+            Complex(-1.2e+02, - 1.5e+04),
+            Complex(-1.2e+02, + 1.5e+04),
+            Complex(-3.0e+03, - 3.5e+04),
+            Complex(-3.0e+03, + 3.5e+04),
+            Complex(-2.0e+02, - 4.5e+04),
+            Complex(-2.0e+02, + 4.5e+04),
+            Complex(-1.5e+03, - 4.5e+04),
+            Complex(-1.5e+03, + 4.5e+04),
+            Complex(-5.0e+02, - 7.0e+04),
+            Complex(-5.0e+02, + 7.0e+04),
+            Complex(-1.0e+03, - 7.3e+04),
+            Complex(-1.0e+03, + 7.3e+04),
+            Complex(-2.0e+03, - 9.0e+04),
+            Complex(-2.0e+03, + 9.0e+04)};
+
+
+    vector<Complex> r = {
+            Complex(-3.0e+03,   0.0    ),
+            Complex(-8.3e+04,   0.0    ),
+            Complex(-5.0e+00, - 7.0e+03),
+            Complex(-5.0e+00, + 7.0e+03),
+            Complex(-2.0e+01, - 1.8e+04),
+            Complex(-2.0e+01, + 1.8e+04),
+            Complex( 6.0e+03, - 4.5e+04),
+            Complex( 6.0e+03, + 4.5e+04),
+            Complex( 4.0e+01, - 6.0e+04),
+            Complex( 4.0e+01, + 6.0e+04),
+            Complex( 9.0e+01, - 1.0e+04),
+            Complex( 9.0e+01, + 1.0e+04),
+            Complex( 5.0e+04, - 8.0e+04),
+            Complex( 5.0e+04, + 8.0e+04),
+            Complex( 1.0e+03, - 4.5e+04),
+            Complex( 1.0e+03, + 4.5e+04),
+            Complex(-5.0e+03, - 9.2e+04),
+            Complex(-5.0e+03, + 9.2e+04)};
+
+    for (size_t i = 0; i < N; i++) {
+        p[i] *= 2.0 * M_PI;
+        r[i] *= 2.0 * M_PI;
+    }
+
+    vector<Real> w = linspace(pair<Real, Real>(1, 1e5), Ns);
+
+    // Frequencies
+    vector<Complex> s(Ns);
+
+    // Samples
+    vector<Sample> samples(Ns);
+
+    // Build samples
+    for (size_t k = 0; k < Ns; k++) {
+        // Build frequencies
+        w[k] *= 2.0 * M_PI;
+        s[k] = Complex(0.0, w[k]);
+
+        // Initialize responses to zero
+        vector<Complex> f(2, 0.0);
+
+        // Compute responses with the model
+        for (size_t n = 0; n < N; n++) {
+            if(n < 10)
+                f[0] += r[n] / (s[k] - p[n]);
+            if(n >= 8)
+                f[1] += r[n] / (s[k] - p[n]);
+        }
+        f[0] += s[k] * E + D + 2.0*D;
+        f[1] += s[k] * 3.0*E; // Misleading in Ex2 of Gustavssen.
+
+        // Add pair frequency-response
+        samples[k] = Sample(s[k], f);
+    }
+
+    // Starting poles
+    vector<Complex> startingPoles;
+
+    // Imaginary parts
+    vector<Real> beta = linspace(pair<Real,Real>(w.front(), w.back()), N/2);
+    for (size_t n = 0; n < N/2; n++) {
+        // Real part
+        Real alpha = -beta[n]*1e-2;
+
+        startingPoles.push_back(Complex(alpha, -beta[n]));
+        startingPoles.push_back(Complex(alpha,  beta[n]));
+    }
+
+    // Model fitting
+    Options opts;
+    opts.setRelax(true);
+    opts.setStable(true);
+    opts.setAsymptoticTrend(Options::linear);
+    opts.setSkipPoleIdentification(false);
+    opts.setSkipResidueIdentification(true);
+    opts.setComplexSpaceState(false);
+
+    VectorFitting::VectorFitting fitting(samples, startingPoles, opts);
+    fitting.fit();
+
+    // Error check
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
+
+}
+
+// Test Gustavsen's 1999 paper example described in section 4
+TEST_F(MathFittingVectorFittingTest, paper) {
+    // Known poles
+    vector<Complex> knownPoles;
+    knownPoles.push_back(Complex(-4500, 0.0));
+    knownPoles.push_back(Complex(-41000, 0.0));
+    knownPoles.push_back(Complex(-100, +5000));
+    knownPoles.push_back(Complex(-100, -5000));
+    knownPoles.push_back(Complex(-120, +15000));
+    knownPoles.push_back(Complex(-120, -15000));
+    knownPoles.push_back(Complex(-3000, +35000));
+    knownPoles.push_back(Complex(-3000, -35000));
+    knownPoles.push_back(Complex(-200, +45000));
+    knownPoles.push_back(Complex(-200, -45000));
+    knownPoles.push_back(Complex(-1500, +45000));
+    knownPoles.push_back(Complex(-1500, -45000));
+    knownPoles.push_back(Complex(-500, +70000));
+    knownPoles.push_back(Complex(-500, -70000));
+    knownPoles.push_back(Complex(-1000, +73000));
+    knownPoles.push_back(Complex(-1000, -73000));
+    knownPoles.push_back(Complex(-2000, +90000));
+    knownPoles.push_back(Complex(-2000,-90000));
+
+    // Known residues
+    vector<Complex> knownResidues;
+    knownResidues.push_back(Complex(-3000, 0.0));
+    knownResidues.push_back(Complex(-83000, 0.0));
+    knownResidues.push_back(Complex(-5, +7000));
+    knownResidues.push_back(Complex(-5, -7000));
+    knownResidues.push_back(Complex(-20, +18000));
+    knownResidues.push_back(Complex(-20, -18000));
+    knownResidues.push_back(Complex(6000, +45000));
+    knownResidues.push_back(Complex(6000, -45000));
+    knownPoles.push_back(Complex(40, +60000));
+    knownPoles.push_back(Complex(40, -60000));
+    knownPoles.push_back(Complex(90, +10000));
+    knownPoles.push_back(Complex(90, -10000));
+    knownPoles.push_back(Complex(50000, +80000));
+    knownPoles.push_back(Complex(50000, -80000));
+    knownPoles.push_back(Complex(1000, +45000));
+    knownPoles.push_back(Complex(1000, -45000));
+    knownPoles.push_back(Complex(-5000, +92000));
+    knownPoles.push_back(Complex(-5000, -92000));
+
+    // Known parameters
+    Real knownD = 0.2;
+    Real knownH = 2e-5;
+
+    // Define samples frequencies
+    const size_t nS = 100;
+    vector<Sample> samples(nS);
+
+    // Compute distribution of the frequencies
+    vector<Real> sImag = linspace(pair<Real,Real>(1,1e5), nS);
+
+    // Vector to store the fitted samples and loop variable
+    vector<Sample> knownResponses(nS);
+
+    for (size_t k = 0; k < nS; k++) {
+        // Independent variable s
+        Complex sk = Complex(0.0, 2 * M_PI * sImag[k]);
+
+        // Computation of the dependent variable f(s) with the model (see (2))
+        vector<Complex> f(1);
+        f[0] = Complex(0,0);
+
+        for (size_t n = 0; n < knownPoles.size(); n++) {
+            Complex cn = knownResidues[n];
+            Complex an = knownPoles[n];
+
+            f[0] += cn / (sk - an);
+        }
+
+        f[0] += knownD + sk * knownH;
+
+        knownResponses[k] = Sample(sk, f);
+    }
+
+    // Define starting poles
+    vector<Complex> poles;
+    poles.push_back(Complex(-1e-2, +1.0));
+    poles.push_back(Complex(-1e-2, -1.0));
+    poles.push_back(Complex(-1.11e2, +1.11e4));
+    poles.push_back(Complex(-1.11e2, -1.11e4));
+    poles.push_back(Complex(-2.22e2, +2.22e4));
+    poles.push_back(Complex(-2.22e2, -2.22e4));
+    poles.push_back(Complex(-3.33e2, +3.33e4));
+    poles.push_back(Complex(-3.33e2, -3.33e4));
+    poles.push_back(Complex(-4.44e2, +4.44e4));
+    poles.push_back(Complex(-4.44e2, -4.44e4));
+    poles.push_back(Complex(-5.55e2, +5.55e4));
+    poles.push_back(Complex(-5.55e2, -5.55e4));
+    poles.push_back(Complex(-6.66e2, +6.66e4));
+    poles.push_back(Complex(-6.66e2, -6.66e4));
+    poles.push_back(Complex(-7.77e2, +7.77e4));
+    poles.push_back(Complex(-7.77e2, -7.77e4));
+    poles.push_back(Complex(-8.88e2, +8.88e4));
+    poles.push_back(Complex(-8.88e2, -8.88e4));
+    poles.push_back(Complex(-1e3, +1e5));
+    poles.push_back(Complex(-1e3, -1e5));
+
+    // Model fitting
+    Options defaults;
+    VectorFitting::VectorFitting fitting(knownResponses, poles, defaults);
+    fitting.fit();
+
+    // Error check
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
 }
 
 
