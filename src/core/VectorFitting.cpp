@@ -401,7 +401,7 @@ void VectorFitting::fit(){
 
         // We now calculate the SER for f (new fitting), using the above
         // calculated zeros as known poles.
-        MatrixXcd Dk(Ns,N);
+        MatrixXcd Dk = MatrixXcd::Zero(Ns,N);
         for (size_t m = 0; m < N; ++m) {
             for (size_t i = 0; i < Ns; ++i) {
                 if (cindex(m) == 0) {
@@ -415,7 +415,7 @@ void VectorFitting::fit(){
             }
         }
 
-        MatrixXcd C(Nc, N);
+        MatrixXcd C  = MatrixXcd::Zero(Nc,N);
         VectorXcd BB = VectorXcd::Zero(2*Ns);
         MatrixXcd A;
         switch (options_.getAsymptoticTrend()) {
@@ -464,24 +464,25 @@ void VectorFitting::fit(){
                 }
             }
 
-            VectorXcd x = (A.transpose() * A).inverse() * A.transpose() * BB;
+            //VectorXcd x = (A.transpose() * A).inverse() * A.transpose() * BB;
+            MatrixXcd X = A.householderQr().solve(BB);
             for (int i = 0; i < A.cols(); ++i) {
-                x(i) /= Escale(i);
+                X(i) /= Escale(i);
             }
 
             // Stores results for response;
             for (size_t i = 0; i < N; ++i) {
-                C(n,i) = x(i);
+                C(n,i) = X(i);
             }
             switch (options_.getAsymptoticTrend()) {
             case Options::zero:
                 break;
             case Options::constant:
-                SERD(n) = x(N);
+                SERD(n) = X(N);
                 break;
             case Options::linear:
-                SERD(n) = x(N);
-                SERE(n) = x(N+1);
+                SERD(n) = X(N);
+                SERE(n) = X(N+1);
                 break;
             }
         } // End of loop over Nc responses.
@@ -550,16 +551,17 @@ void VectorFitting::fit(){
     }
 }
 
-
-
-// Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
-// computed with the model in (2)
+/**
+ * Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
+ * computed with the model in (2).
+ * @return A std::vector of Samples obtained with the fitted parameters.
+ */
 std::vector<Sample> VectorFitting::getFittedSamples() const {
     const size_t N  = getOrder();
     const size_t Ns = getSamplesSize();
     const size_t Nc = getResponseSize();
 
-    MatrixXcd Dk(Ns,N);
+    MatrixXcd Dk = MatrixXcd::Zero(Ns,N);
     for (size_t m = 0; m < N; ++m) {
         for (size_t i = 0; i < Ns; ++i) {
             Dk(i,m) = Complex(1.0, 0) / (samples_[i].first - A_(m,m));
@@ -679,4 +681,9 @@ RowVectorXi VectorFitting::getCIndex(const VectorXcd& poles) {
     return cindex;
 }
 
+void VectorFitting::setOptions(const Options& options) {
+    options_ = options;
+}
+
 } /* namespace VectorFitting */
+

@@ -349,11 +349,12 @@ TEST_F(MathFittingVectorFittingTest, ex2){
     opts.setSkipResidueIdentification(true);
     opts.setComplexSpaceState(false);
 
-    VectorFitting::VectorFitting fitting(samples, startingPoles, opts);
     const size_t nIter = 3;
+    VectorFitting::VectorFitting fitting(samples, startingPoles, opts);
     for (size_t iter = 0; iter < nIter; ++iter) {
-        if (iter == nIter) {
+        if (iter == nIter-1) {
             opts.setSkipResidueIdentification(false);
+            fitting.setOptions(opts);
         }
         fitting.fit();
     }
