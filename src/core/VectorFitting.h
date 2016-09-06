@@ -84,7 +84,7 @@ public:
     VectorXcd getD() {return D_;}    // Size:  1, Nc.
     VectorXcd getE() {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
-
+    Real getMaxDeviation() const;
 private:
     Options options_;
 

@@ -234,6 +234,9 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
 
     // Root Mean Square Error check.
     EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-8);
+
+    // Get maximum deviation.
+    EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
 }
 
 
@@ -347,56 +350,64 @@ TEST_F(MathFittingVectorFittingTest, ex2){
     opts.setComplexSpaceState(false);
 
     VectorFitting::VectorFitting fitting(samples, startingPoles, opts);
-    fitting.fit();
+    const size_t nIter = 3;
+    for (size_t iter = 0; iter < nIter; ++iter) {
+        if (iter == nIter) {
+            opts.setSkipResidueIdentification(false);
+        }
+        fitting.fit();
+    }
 
     // Error check
-    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-8);
 
+    // Get maximum deviation.
+    EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
 }
 
 // Test Gustavsen's 1999 paper example described in section 4
 TEST_F(MathFittingVectorFittingTest, paper) {
     // Known poles
     vector<Complex> knownPoles;
-    knownPoles.push_back(Complex(-4500, 0.0));
-    knownPoles.push_back(Complex(-41000, 0.0));
-    knownPoles.push_back(Complex(-100, +5000));
-    knownPoles.push_back(Complex(-100, -5000));
-    knownPoles.push_back(Complex(-120, +15000));
-    knownPoles.push_back(Complex(-120, -15000));
-    knownPoles.push_back(Complex(-3000, +35000));
-    knownPoles.push_back(Complex(-3000, -35000));
-    knownPoles.push_back(Complex(-200, +45000));
-    knownPoles.push_back(Complex(-200, -45000));
-    knownPoles.push_back(Complex(-1500, +45000));
-    knownPoles.push_back(Complex(-1500, -45000));
-    knownPoles.push_back(Complex(-500, +70000));
-    knownPoles.push_back(Complex(-500, -70000));
-    knownPoles.push_back(Complex(-1000, +73000));
-    knownPoles.push_back(Complex(-1000, -73000));
-    knownPoles.push_back(Complex(-2000, +90000));
-    knownPoles.push_back(Complex(-2000,-90000));
+    knownPoles.push_back(Complex(-  4500,       0));
+    knownPoles.push_back(Complex(- 41000,       0));
+    knownPoles.push_back(Complex(-   100, +  5000));
+    knownPoles.push_back(Complex(-   100, -  5000));
+    knownPoles.push_back(Complex(-   120, + 15000));
+    knownPoles.push_back(Complex(-   120, - 15000));
+    knownPoles.push_back(Complex(-  3000, + 35000));
+    knownPoles.push_back(Complex(-  3000, - 35000));
+    knownPoles.push_back(Complex(-   200, + 45000));
+    knownPoles.push_back(Complex(-   200, - 45000));
+    knownPoles.push_back(Complex(-  1500, + 45000));
+    knownPoles.push_back(Complex(-  1500, - 45000));
+    knownPoles.push_back(Complex(-   500, + 70000));
+    knownPoles.push_back(Complex(-   500, - 70000));
+    knownPoles.push_back(Complex(-  1000, + 73000));
+    knownPoles.push_back(Complex(-  1000, - 73000));
+    knownPoles.push_back(Complex(-  2000, + 90000));
+    knownPoles.push_back(Complex(-  2000, - 90000));
 
     // Known residues
     vector<Complex> knownResidues;
-    knownResidues.push_back(Complex(-3000, 0.0));
-    knownResidues.push_back(Complex(-83000, 0.0));
-    knownResidues.push_back(Complex(-5, +7000));
-    knownResidues.push_back(Complex(-5, -7000));
-    knownResidues.push_back(Complex(-20, +18000));
-    knownResidues.push_back(Complex(-20, -18000));
-    knownResidues.push_back(Complex(6000, +45000));
-    knownResidues.push_back(Complex(6000, -45000));
-    knownPoles.push_back(Complex(40, +60000));
-    knownPoles.push_back(Complex(40, -60000));
-    knownPoles.push_back(Complex(90, +10000));
-    knownPoles.push_back(Complex(90, -10000));
-    knownPoles.push_back(Complex(50000, +80000));
-    knownPoles.push_back(Complex(50000, -80000));
-    knownPoles.push_back(Complex(1000, +45000));
-    knownPoles.push_back(Complex(1000, -45000));
-    knownPoles.push_back(Complex(-5000, +92000));
-    knownPoles.push_back(Complex(-5000, -92000));
+    knownResidues.push_back(Complex(-  3000,       0));
+    knownResidues.push_back(Complex(- 83000,       0));
+    knownResidues.push_back(Complex(-     5, +  7000));
+    knownResidues.push_back(Complex(-     5, -  7000));
+    knownResidues.push_back(Complex(-    20, + 18000));
+    knownResidues.push_back(Complex(-    20, - 18000));
+    knownResidues.push_back(Complex(   6000, + 45000));
+    knownResidues.push_back(Complex(   6000, - 45000));
+    knownResidues.push_back(Complex(     40, + 60000));
+    knownResidues.push_back(Complex(     40, - 60000));
+    knownResidues.push_back(Complex(     90, + 10000));
+    knownResidues.push_back(Complex(     90, - 10000));
+    knownResidues.push_back(Complex(  50000, + 80000));
+    knownResidues.push_back(Complex(  50000, - 80000));
+    knownResidues.push_back(Complex(   1000, + 45000));
+    knownResidues.push_back(Complex(   1000, - 45000));
+    knownResidues.push_back(Complex(-  5000, + 92000));
+    knownResidues.push_back(Complex(-  5000, - 92000));
 
     // Known parameters
     Real knownD = 0.2;
@@ -434,34 +445,39 @@ TEST_F(MathFittingVectorFittingTest, paper) {
 
     // Define starting poles
     vector<Complex> poles;
-    poles.push_back(Complex(-1e-2, +1.0));
-    poles.push_back(Complex(-1e-2, -1.0));
-    poles.push_back(Complex(-1.11e2, +1.11e4));
-    poles.push_back(Complex(-1.11e2, -1.11e4));
-    poles.push_back(Complex(-2.22e2, +2.22e4));
-    poles.push_back(Complex(-2.22e2, -2.22e4));
-    poles.push_back(Complex(-3.33e2, +3.33e4));
-    poles.push_back(Complex(-3.33e2, -3.33e4));
-    poles.push_back(Complex(-4.44e2, +4.44e4));
-    poles.push_back(Complex(-4.44e2, -4.44e4));
-    poles.push_back(Complex(-5.55e2, +5.55e4));
-    poles.push_back(Complex(-5.55e2, -5.55e4));
-    poles.push_back(Complex(-6.66e2, +6.66e4));
-    poles.push_back(Complex(-6.66e2, -6.66e4));
-    poles.push_back(Complex(-7.77e2, +7.77e4));
-    poles.push_back(Complex(-7.77e2, -7.77e4));
-    poles.push_back(Complex(-8.88e2, +8.88e4));
-    poles.push_back(Complex(-8.88e2, -8.88e4));
-    poles.push_back(Complex(-1e3, +1e5));
-    poles.push_back(Complex(-1e3, -1e5));
+    poles.push_back(Complex(-    1e-2, +  1.0));
+    poles.push_back(Complex(-    1e-2, -  1.0));
+    poles.push_back(Complex(- 1.11e+2, +  1.11e+4));
+    poles.push_back(Complex(- 1.11e+2, -  1.11e+4));
+    poles.push_back(Complex(- 2.22e+2, +  2.22e+4));
+    poles.push_back(Complex(- 2.22e+2, -  2.22e+4));
+    poles.push_back(Complex(- 3.33e+2, +  3.33e+4));
+    poles.push_back(Complex(- 3.33e+2, -  3.33e+4));
+    poles.push_back(Complex(- 4.44e+2, +  4.44e+4));
+    poles.push_back(Complex(- 4.44e+2, -  4.44e+4));
+    poles.push_back(Complex(- 5.55e+2, +  5.55e+4));
+    poles.push_back(Complex(- 5.55e+2, -  5.55e+4));
+    poles.push_back(Complex(- 6.66e+2, +  6.66e+4));
+    poles.push_back(Complex(- 6.66e+2, -  6.66e+4));
+    poles.push_back(Complex(- 7.77e+2, +  7.77e+4));
+    poles.push_back(Complex(- 7.77e+2, -  7.77e+4));
+    poles.push_back(Complex(- 8.88e+2, +  8.88e+4));
+    poles.push_back(Complex(- 8.88e+2, -  8.88e+4));
+    poles.push_back(Complex(-    1e+3, +     1e+5));
+    poles.push_back(Complex(-    1e+3, -     1e+5));
 
     // Model fitting
-    Options defaults;
-    VectorFitting::VectorFitting fitting(knownResponses, poles, defaults);
+    Options opts;
+    opts.setAsymptoticTrend(Options::linear);
+
+    VectorFitting::VectorFitting fitting(knownResponses, poles, opts);
     fitting.fit();
 
     // Error check
-    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-3);
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-8);
+
+    // Get maximum deviation.
+    EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
 }
 
 

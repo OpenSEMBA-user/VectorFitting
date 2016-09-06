@@ -137,7 +137,7 @@ void VectorFitting::fit(){
         RowVectorXi cindex = getCIndex(poles_);
 
         // Builds system - matrix.
-        MatrixXcd LAMBD(N, N);
+        MatrixXcd LAMBD = MatrixXcd::Zero(N, N);
         for (size_t i = 0; i < N; ++i) {
             LAMBD(i,i) = poles_[i];
         }
@@ -577,7 +577,23 @@ Real VectorFitting::getRMSE() const {
         }
     }
 
-    return sqrt(error/(getSamplesSize()*getResponseSize()));
+    Real res = sqrt(error/((Real)(getSamplesSize()*getResponseSize())));
+    return res;
+}
+
+Real VectorFitting::getMaxDeviation() const {
+    std::vector<Sample> fittedSamples = getFittedSamples();
+    std::vector<Real> dev(fittedSamples.size(), 0.0);
+
+    for (size_t i = 0; i < fittedSamples.size(); ++i) {
+        std::vector<Real> sampleDev(getResponseSize(), 0.0);
+        for (size_t j = 0; j < getResponseSize(); ++j) {
+            sampleDev[j] = std::abs(
+                    samples_[i].second[j] - fittedSamples[i].second[j]);
+        }
+        dev[i] = *std::max_element(sampleDev.begin(), sampleDev.end());
+    }
+    return *std::max_element(dev.begin(), dev.end());
 }
 
 size_t VectorFitting::getSamplesSize() const {
@@ -614,5 +630,3 @@ RowVectorXi VectorFitting::getCIndex(const VectorXcd& poles) {
 }
 
 } /* namespace VectorFitting */
-
-
