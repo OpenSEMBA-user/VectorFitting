@@ -474,10 +474,10 @@ TEST_F(MathFittingVectorFittingTest, paper) {
     fitting.fit();
 
     // Error check
-    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-8);
+    EXPECT_NEAR(0.0, fitting.getRMSE(), 1e-6);
 
     // Get maximum deviation.
-    EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
+    EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-8);
 }
 
 

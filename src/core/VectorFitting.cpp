@@ -36,6 +36,20 @@ struct {
     }
 } sampleOrdering;
 
+// Complex ordering.
+struct {
+    bool operator()(Complex a, Complex b)
+    {
+        if (a.real() < b.real()) {
+            return true;
+        }
+        if (a.real() == b.real()) {
+            return a.imag() < b.imag();
+        }
+        return false;
+    }
+} complexOrdering;
+
 // Quick check to see if a Complex number is real
 bool isReal(Complex n){
     return equal(n.imag(), 0.0);
@@ -142,7 +156,7 @@ void VectorFitting::fit(){
             LAMBD(i,i) = poles_[i];
         }
 
-        MatrixXcd Dk(Ns,N+2);
+        MatrixXcd Dk = MatrixXcd::Zero(Ns,N+2);
         MatrixXcd LAMBDprime = LAMBD.transpose().conjugate();
         for (size_t m = 0; m < N; ++m) {
             if (cindex(m) == 0) { // Real pole.
@@ -192,10 +206,10 @@ void VectorFitting::fit(){
             }
 
             // Computes AA and bb.
-            MatrixXd AA(Nc*(N+1), N+1);
-            VectorXd bb(Nc*(N+1));
+            MatrixXd AA = MatrixXd::Zero(Nc*(N+1), N+1);
+            VectorXd bb = VectorXd::Zero(Nc*(N+1));
             for (size_t n = 0; n < Nc; ++n) {
-                MatrixXd A(2*Ns+1, (N+offs)+N+1);
+                MatrixXd A = MatrixXd::Zero(2*Ns+1, (N+offs)+N+1);
                 VectorXd weig(Ns);
                 for (size_t i = 0; i < Ns; ++i) {
                     weig(i) = weights_(i,n);
@@ -246,7 +260,7 @@ void VectorFitting::fit(){
             }  // End of for loop n=1:Nc
 
             // Computes scaling factor.
-            VectorXd Escale(N+1);
+            VectorXd Escale = VectorXd::Zero(N+1);
             for (size_t col = 0; col < N+1; ++col) {
                 Escale(col) = 1.0 / AA.col(col).norm();
                 for (size_t i = 0; i < Nc*(N+1); ++i) {
@@ -254,7 +268,7 @@ void VectorFitting::fit(){
                 }
             }
 
-            x = (AA.transpose() * AA).inverse() * AA.transpose() * bb;
+            x = AA.householderQr().solve(bb);
             for (size_t i = 0; i < N+1; ++i) {
                 x(i) *= Escale(i);
             }
@@ -267,7 +281,7 @@ void VectorFitting::fit(){
             throw std::runtime_error("Option to do not relax is not implemented");
         }
 
-        VectorXcd C(N);
+        VectorXcd C = VectorXcd::Zero(N);
         for (int i = 0; i < x.rows()-1; ++i) {
             C(i) = x(i);
         }
@@ -294,7 +308,7 @@ void VectorFitting::fit(){
                     LAMBD(m+1,m+1) =             LAMBD(m,m);
                     B(m  ) = 2;
                     B(m+1) = 0;
-                    const Real aux = std::real(C(m));
+                    const Complex aux = C(m);
                     C(m  ) = std::real(aux);
                     C(m+1) = std::imag(aux);
                     m++;
@@ -317,10 +331,10 @@ void VectorFitting::fit(){
             }
         }
 
-        MatrixXd ZER(N,N);
+        MatrixXd ZER = MatrixXd::Zero(N,N);
         for (size_t i = 0; i < N; ++i) {
             for (size_t j = 0; j < N; ++j) {
-                ZER(i,j) = std::real(LAMBD(i,j)) -  B(i) * std::real(C(i)) / D;
+                ZER(i,j) = std::real(LAMBD(i,j)) - (Real) B(i) * std::real(C(j)) / D;
             }
         }
 
@@ -334,8 +348,44 @@ void VectorFitting::fit(){
                 }
             }
         }
+        std::vector<Complex> complexPoles(N);
+        for (size_t m = 0; m < N; ++m) {
+            complexPoles[m] = roetter(m);
+        }
+        std::sort(complexPoles.begin(), complexPoles.end(), complexOrdering);
+        std::reverse(complexPoles.begin(), complexPoles.end());
+        for (size_t m = 0; m < N; ++m) {
+            roetter(m) = complexPoles[m];
+        }
 
-        // TODO Sorterer polene s.a. de reelle kommer first .
+        // Sorterer polene s.a. de reelle kommer first.
+        for (size_t n = 0; n < N; ++n) {
+            for (size_t m = n+1; m < N; ++m) {
+                if (equal(std::imag(roetter(m)), 0.0) &&
+                        !equal(std::imag(roetter(n)), 0.0)) {
+                    Complex trans = roetter(n);
+                    roetter(n) = roetter(m);
+                    roetter(m) = trans;
+                }
+            }
+        }
+        size_t N1 = 0;
+        for (size_t m = 0; m < N; ++m) {
+            if (equal(std::imag(roetter(m)), 0.0)) {
+                N1 = m+1;
+            }
+        }
+        if (N1 < N) {
+            std::vector<Complex> aux(N-N1);
+            for (size_t m = N1; m < N; ++m) {
+                aux[m-N1] = roetter(m);
+            }
+            std::sort(aux.begin(), aux.end(), complexOrdering);
+            std::reverse(aux.begin(), aux.end());
+            for (size_t m = N1; m < N; ++m) {
+                roetter(m) = aux[m-N1];
+            }
+        }
 
         // Stores results for poles.
         SERA = roetter;
