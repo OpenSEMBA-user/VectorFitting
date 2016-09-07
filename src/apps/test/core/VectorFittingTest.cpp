@@ -84,7 +84,6 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     opts.setAsymptoticTrend(Options::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
-    opts.setComplexSpaceState(true);
 
     VectorFitting::VectorFitting fitting(samples, poles, opts);
     fitting.fit();
@@ -347,7 +346,6 @@ TEST_F(MathFittingVectorFittingTest, ex2){
     opts.setAsymptoticTrend(Options::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(true);
-    opts.setComplexSpaceState(false);
 
     const size_t nIter = 3;
     VectorFitting::VectorFitting fitting(samples, startingPoles, opts);

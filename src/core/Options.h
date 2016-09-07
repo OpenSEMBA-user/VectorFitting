@@ -56,7 +56,7 @@ private:
     AsymptoticTrend asymptoticTrend_;
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
-    bool complexSpaceState_;
+//    bool complexSpaceState_;
 };
 
 } /* namespace VectorFitting */

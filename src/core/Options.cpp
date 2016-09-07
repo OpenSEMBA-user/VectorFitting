@@ -30,7 +30,7 @@ Options::Options() {
     asymptoticTrend_           = constant;
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
-    complexSpaceState_         = true;
+//    complexSpaceState_         = true;
 }
 
 Options::~Options() {
@@ -79,12 +79,13 @@ void Options::setStable(bool stable) {
     stable_ = stable;
 }
 
+//bool VectorFitting::Options::isComplexSpaceState() const {
+//    return complexSpaceState_;
+//}
+//
+//void VectorFitting::Options::setComplexSpaceState(bool complexSpaceState) {
+//    complexSpaceState_ = complexSpaceState;
+//}
+
 } /* namespace VectorFitting */
 
-bool VectorFitting::Options::isComplexSpaceState() const {
-    return complexSpaceState_;
-}
-
-void VectorFitting::Options::setComplexSpaceState(bool complexSpaceState) {
-    complexSpaceState_ = complexSpaceState;
-}

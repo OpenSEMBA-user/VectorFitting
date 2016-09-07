@@ -540,35 +540,35 @@ void VectorFitting::fit(){
         E_ = VectorXcd::Zero(Nc);
     }
 
-    // Converts into real state-space model
-    if (!options_.isComplexSpaceState()) {
-        RowVectorXi cindex = getCIndex(poles_);
-        size_t n = 0;
-        for (size_t m = 0; m < N; ++m) {
-            if (cindex(m) == 1) {
-                Real a1 = std::real(A_(n,n));
-                Real a2 = std::imag(A_(n,n));
-                VectorXcd c1(Nc), c2(Nc);
-                for (size_t i = 0; i < Nc; ++i) {
-                    c1(i) = 2.0 * std::real(C_(i,n));
-                    c2(i) = 2.0 * std::imag(C_(i,n));
-                }
-                Real b1 = 2.0 * std::real(B_(n));
-                Real b2 = 2.0 * std::real(B_(n));
-                Matrix2cd Ablock;
-                Ablock(0,0) =   a1;
-                Ablock(0,1) =   a2;
-                Ablock(1,0) = - a2;
-                Ablock(1,1) =   a1;
-                A_.block(n,n,2,2) = Ablock;
-                C_.block(0,   n, Nc, 1) = c1;
-                C_.block(0, n+1, Nc, 1) = c2;
-                B_(n) = b1;
-                B_(n+1) = b2;
-            }
-            n++;
-        }
-    }
+//    // Converts into real state-space model
+//    if (!options_.isComplexSpaceState()) {
+//        RowVectorXi cindex = getCIndex(poles_);
+//        size_t n = 0;
+//        for (size_t m = 0; m < N; ++m) {
+//            if (cindex(m) == 1) {
+//                Real a1 = std::real(A_(n,n));
+//                Real a2 = std::imag(A_(n,n));
+//                VectorXcd c1(Nc), c2(Nc);
+//                for (size_t i = 0; i < Nc; ++i) {
+//                    c1(i) = std::real(C_(i,n));
+//                    c2(i) = std::imag(C_(i,n));
+//                }
+//                Real b1 =   2.0 * std::real(B_(n));
+//                Real b2 = - 2.0 * std::imag(B_(n));
+//                Matrix2cd Ablock;
+//                Ablock(0,0) =   a1;
+//                Ablock(0,1) =   a2;
+//                Ablock(1,0) = - a2;
+//                Ablock(1,1) =   a1;
+//                A_.block(n,n,2,2) = Ablock;
+//                C_.block(0,   n, Nc, 1) = c1;
+//                C_.block(0, n+1, Nc, 1) = c2;
+//                B_(n  ) = b1;
+//                B_(n+1) = b2;
+//            }
+//            n++;
+//        }
+//    }
 }
 
 /**
@@ -584,30 +584,32 @@ std::vector<Sample> VectorFitting::getFittedSamples() const {
     MatrixXcd Dk = MatrixXcd::Zero(Ns,N);
     for (size_t m = 0; m < N; ++m) {
         for (size_t i = 0; i < Ns; ++i) {
-            Dk(i,m) = Complex(1.0, 0) / (samples_[i].first - A_(m,m));
+            Dk(i,m) = Complex(1.0, 0) / (samples_[i].first - poles_(m));
         }
     }
 
     std::vector<Sample> res(
             Ns, Sample(Complex(0.0,0.0), std::vector<Complex>(Nc)));
-    MatrixXcd fit = Dk * C_.transpose();
+    MatrixXcd fit = MatrixXcd::Zero(Nc,Ns);
+
     for (size_t n = 0; n < Nc; ++n) {
+        fit.block(n,0,1,Ns) = (Dk * C_.block(n,0,1,N).transpose()).transpose();
         switch (options_.getAsymptoticTrend()) {
         case Options::zero:
             break;
         case Options::constant:
             for (size_t i = 0; i < Ns; ++i) {
-                fit(i,n) += D_(n);
+                fit(n,i) += D_(n);
             }
             break;
         case Options::linear:
             for (size_t i = 0; i < Ns; ++i) {
-                fit(i,n) += D_(n) + samples_[i].first * E_(n);
+                fit(n,i) += D_(n) + samples_[i].first * E_(n);
             }
         }
         for (size_t i = 0; i < Ns; ++i) {
             res[i].first = samples_[i].first;
-            res[i].second[n] = fit(i,n);
+            res[i].second[n] = fit(n,i);
         }
     }
     return res;
