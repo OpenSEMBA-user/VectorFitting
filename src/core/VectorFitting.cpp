@@ -348,42 +348,62 @@ void VectorFitting::fit(){
                 }
             }
         }
-        std::vector<Complex> complexPoles(N);
-        for (size_t m = 0; m < N; ++m) {
-            complexPoles[m] = roetter(m);
-        }
-        std::sort(complexPoles.begin(), complexPoles.end(), complexOrdering);
-        std::reverse(complexPoles.begin(), complexPoles.end());
-        for (size_t m = 0; m < N; ++m) {
-            roetter(m) = complexPoles[m];
-        }
 
-        // Sorterer polene s.a. de reelle kommer first.
-        for (size_t n = 0; n < N; ++n) {
-            for (size_t m = n+1; m < N; ++m) {
-                if (equal(std::imag(roetter(m)), 0.0) &&
-                        !equal(std::imag(roetter(n)), 0.0)) {
-                    Complex trans = roetter(n);
-                    roetter(n) = roetter(m);
-                    roetter(m) = trans;
-                }
-            }
-        }
-        size_t N1 = 0;
+//        // Sorterer polene s.a. de reelle kommer first.
+//        std::vector<Complex> complexPoles(N);
+//        for (size_t m = 0; m < N; ++m) {
+//            complexPoles[m] = roetter(m);
+//        }
+//        std::sort(complexPoles.begin(), complexPoles.end(), complexOrdering);
+//        std::reverse(complexPoles.begin(), complexPoles.end());
+//        for (size_t m = 0; m < N; ++m) {
+//            roetter(m) = complexPoles[m];
+//        }
+//
+//        for (size_t n = 0; n < N; ++n) {
+//            for (size_t m = n+1; m < N; ++m) {
+//                if (equal(std::imag(roetter(m)), 0.0) &&
+//                        !equal(std::imag(roetter(n)), 0.0)) {
+//                    Complex trans = roetter(n);
+//                    roetter(n) = roetter(m);
+//                    roetter(m) = trans;
+//                }
+//            }
+//        }
+//        size_t N1 = 0;
+//        for (size_t m = 0; m < N; ++m) {
+//            if (equal(std::imag(roetter(m)), 0.0)) {
+//                N1 = m+1;
+//            }
+//        }
+//        if (N1 < N) {
+//            std::vector<Complex> aux(N-N1);
+//            for (size_t m = N1; m < N; ++m) {
+//                aux[m-N1] = roetter(m);
+//            }
+//            std::sort(aux.begin(), aux.end(), complexOrdering);
+//            std::reverse(aux.begin(), aux.end());
+//            for (size_t m = N1; m < N; ++m) {
+//                roetter(m) = aux[m-N1];
+//            }
+//        }
+
+        // Alternative way of sorting.
+        // First pure real poles in ascending order.
+        // Then complex poles in ascending order by imaginary part.
+        std::vector<Complex> aux(N);
         for (size_t m = 0; m < N; ++m) {
-            if (equal(std::imag(roetter(m)), 0.0)) {
-                N1 = m+1;
-            }
+            aux[m] = Complex(std::abs(std::imag(roetter(m))),
+                             std::abs(std::real(roetter(m))));
         }
-        if (N1 < N) {
-            std::vector<Complex> aux(N-N1);
-            for (size_t m = N1; m < N; ++m) {
-                aux[m-N1] = roetter(m);
-            }
-            std::sort(aux.begin(), aux.end(), complexOrdering);
-            std::reverse(aux.begin(), aux.end());
-            for (size_t m = N1; m < N; ++m) {
-                roetter(m) = aux[m-N1];
+        std::sort(aux.begin(), aux.end(), complexOrdering);
+        for (size_t m = 0; m < N; ++m) {
+            if (equal(aux[m].real(), 0.0)) {
+                roetter(m) = Complex(-std::imag(aux[m]), std::real(aux[m]));
+            } else {
+                roetter(m) = Complex(-std::imag(aux[m]), std::real(aux[m]));
+                m++;
+                roetter(m) = Complex(-std::imag(aux[m]), -std::real(aux[m]));
             }
         }
 
@@ -416,20 +436,20 @@ void VectorFitting::fit(){
         }
 
         MatrixXcd C  = MatrixXcd::Zero(Nc,N);
-        VectorXcd BB = VectorXcd::Zero(2*Ns);
-        MatrixXcd A;
-        switch (options_.getAsymptoticTrend()) {
-        case Options::zero:
-            A = MatrixXcd::Zero(2*Ns, N);
-            break;
-        case Options::constant:
-            A = MatrixXcd::Zero(2*Ns, N+1);
-            break;
-        case Options::linear:
-            A = MatrixXcd::Zero(2*Ns, N+2);
-            break;
-        }
         for (size_t n = 0; n < Nc; ++n) {
+            VectorXcd BB = VectorXcd::Zero(2*Ns);
+            MatrixXcd A;
+            switch (options_.getAsymptoticTrend()) {
+            case Options::zero:
+                A = MatrixXcd::Zero(2*Ns, N);
+                break;
+            case Options::constant:
+                A = MatrixXcd::Zero(2*Ns, N+1);
+                break;
+            case Options::linear:
+                A = MatrixXcd::Zero(2*Ns, N+2);
+                break;
+            }
             for (size_t i = 0; i < Ns; ++i) {
                 for (size_t j = 0; j < N; ++j) {
                     A (i    ,j) =   std::real(Dk(i,j)) * weights_(i,n);
