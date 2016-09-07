@@ -52,10 +52,11 @@ public:
      * @param order     Order of approximation.
      * @param options   Options.
      */
-    VectorFitting(
-            const std::vector<Sample>& samples,
+    VectorFitting(const std::vector<Sample>& samples,
             const size_t order,
-            const Options& options);
+            const Options& options,
+            const std::vector<std::vector<Real>>& weights =
+                    std::vector<std::vector<Real>>());
 
     /**
      * Build a fitter with starting poles provided by the user. order_ and
@@ -65,8 +66,10 @@ public:
      * @param options   Options.
      */
     VectorFitting(const std::vector<Sample>& samples,
-                  const std::vector<Complex>& poles,
-                  const Options& options);
+            const std::vector<Complex>& poles,
+            const Options& options,
+            const std::vector<std::vector<Real>>& weight =
+                    std::vector<std::vector<Real>>());
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
@@ -104,7 +107,8 @@ private:
 
     void init(const std::vector<Sample>& samples,
               const std::vector<Complex>& poles,
-              const Options& options);
+              const Options& options,
+              const std::vector<std::vector<Real>>& weights);
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;

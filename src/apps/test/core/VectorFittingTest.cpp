@@ -20,6 +20,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
+#include <fstream>
+
 #include "gtest/gtest.h"
 #include "VectorFitting.h"
 #include "SpaceGenerator.h"
@@ -34,8 +36,7 @@ class MathFittingVectorFittingTest : public ::testing::Test {
 TEST_F(MathFittingVectorFittingTest, ctor) {
     Options defaultOptions;
     vector<Sample> noSamples;
-    EXPECT_THROW(
-            VectorFitting::VectorFitting(noSamples, 3, defaultOptions),
+    EXPECT_THROW(VectorFitting::VectorFitting(noSamples, 3, defaultOptions),
             runtime_error);
 }
 
@@ -239,7 +240,6 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
 }
 
-
 TEST_F(MathFittingVectorFittingTest, ex2){
     // Order of approximation
     const int N = 18;
@@ -394,6 +394,78 @@ TEST_F(MathFittingVectorFittingTest, ex2){
 
 }
 
+TEST_F(MathFittingVectorFittingTest, ex4a){
+
+    // Reads raw data from file.
+    ifstream file("testData/fdne.txt");
+    EXPECT_TRUE(file.is_open());
+    size_t Nc, Ns;
+    file >> Nc >> Ns;
+    vector<pair<Complex,MatrixXcd>> bigY(Ns);
+    for (size_t k = 0; k < Ns; ++k) {
+        Real readS;
+        file >> readS;
+        bigY[k].first = Complex(0.0, readS);
+        bigY[k].second = MatrixXcd::Zero(Nc,Nc);
+        for (size_t row = 0; row < Nc; ++row) {
+            for (size_t col = 0; col < Nc; ++col) {
+                Real re, im;
+                file >> re >> im;
+                bigY[k].second(row,col) = Complex(re,im);
+            }
+        }
+    }
+    file.close();
+
+    // Prepares samples. Only first column of bigY is used.
+    vector<Sample> f(Ns, Sample(Complex(0.0,0.0), vector<Complex>(Nc)));
+    for (size_t k = 0; k < Ns; ++k) {
+        f[k].first = bigY[k].first;
+        VectorXcd aux = bigY[k].second.row(0).transpose();
+        for (size_t i = 0; i < Nc; ++i) {
+            f[k].second[i] = aux(i);
+        }
+    }
+
+    // Prepares fitting.
+    const size_t N = 50;
+    pair<Real,Real> range(f.front().first.imag(),  f.back().first.imag());
+    vector<Real> bet = linspace(range, N/2);
+    vector<Complex> poles(N); // Starting poles.
+    for (size_t n = 0; n < N/2; ++n) {
+        poles[2*n  ] = Complex( - bet[n]*1e-2, - bet[n]);
+        poles[2*n+1] = Complex( - bet[n]*1e-2, + bet[n]);
+    }
+    vector<vector<Real>> weights(Ns, vector<Real>(Nc));
+    for (size_t i = 0; i < Ns; ++i) {
+        for (size_t j = 0; j < Nc; ++j) {
+            weights[i][j] = 1.0 / sqrt(std::abs(f[i].second[j]));
+        }
+    }
+
+    Options opts;
+    opts.setRelax(true);
+    opts.setStable(true);
+    opts.setAsymptoticTrend(Options::linear);
+    opts.setSkipPoleIdentification(false);
+    opts.setSkipResidueIdentification(false);
+
+    const size_t Niter = 4; // RMS is not reduced after this...
+    VectorFitting::VectorFitting fitting(f, poles, opts, weights);
+    Real rmse = numeric_limits<Real>::max();
+    for (size_t iter = 0; iter < Niter; ++iter) {
+        fitting.fit();
+
+        Real newRmse = fitting.getRMSE();
+        EXPECT_TRUE(newRmse < rmse);
+        rmse = newRmse;
+
+        EXPECT_NEAR(0.0, rmse, 1e-3);
+    }
+
+
+}
+
 // Test Gustavsen's 1999 paper example described in section 4
 TEST_F(MathFittingVectorFittingTest, paperSection4) {
     // Known poles
@@ -508,6 +580,4 @@ TEST_F(MathFittingVectorFittingTest, paperSection4) {
     // Get maximum deviation.
     EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-8);
 }
-
-
 

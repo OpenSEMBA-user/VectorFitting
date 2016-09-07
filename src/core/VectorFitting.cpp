@@ -57,7 +57,8 @@ bool isReal(Complex n){
 
 void VectorFitting::init(const std::vector<Sample>& samples,
                          const std::vector<Complex>& poles,
-                         const Options& options) {
+                         const Options& options,
+                         const std::vector<std::vector<Real>>& weights) {
     options_ = options;
 
     // Sanity check: the complex poles should come in pairs; otherwise, there
@@ -77,21 +78,39 @@ void VectorFitting::init(const std::vector<Sample>& samples,
     for (size_t i = 0; i < poles.size(); ++i) {
         poles_(i) = poles[i];
     }
-    weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
+    if (weights.size() != 0 && weights.size() != samples.size()) {
+        throw std::runtime_error("Weights and samples must have same size.");
+    }
+    if (weights.size() == 0) {
+        weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
+    } else {
+        weights_ = MatrixXd::Zero(getSamplesSize(), getResponseSize());
+        for (size_t i = 0; i < getSamplesSize(); ++i) {
+            if (weights[i].size() != getResponseSize()) {
+                throw std::runtime_error(
+                        "All weights must have the same size as the samples");
+            }
+            for (size_t j = 0; j < getResponseSize(); ++j) {
+                weights_(i,j) = weights[i][j];
+            }
+        }
+    }
 }
 
 VectorFitting::VectorFitting(const std::vector<Sample>& samples,
         const std::vector<Complex>& poles,
-        const Options& options) {
+        const Options& options,
+        const std::vector<std::vector<Real>>& weights) {
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
-    init(samples, poles, options);
+    init(samples, poles, options, weights);
 }
 
 VectorFitting::VectorFitting(const std::vector<Sample>& samples,
         const size_t order,
-        const Options& options) {
+        const Options& options,
+        const std::vector<std::vector<Real>>& weights) {
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
@@ -126,7 +145,7 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
         poles[i+1] = conj(poles[i]);
     }
 
-    init(samples, poles, options);
+    init(samples, poles, options, weights);
 }
 
 void VectorFitting::fit(){
@@ -279,6 +298,7 @@ void VectorFitting::fit(){
                 || lower  (std::abs(x(0)), toleranceLow_)
                 || greater(std::abs(x(N)), toleranceHigh_) ) {
             throw std::runtime_error("Option to do not relax is not implemented");
+            // TODO Implement this.
         }
 
         VectorXcd C = VectorXcd::Zero(N);
@@ -462,15 +482,17 @@ void VectorFitting::fit(){
             case Options::zero:
                 break;
             case Options::constant:
-                A.block( 0, N, Ns, 1) = MatrixXcd::Ones(Ns, 1);
-                A.block(Ns, N, Ns, 1) = MatrixXcd::Zero(Ns, 1);
+                for (size_t i = 0; i < Ns; ++i) {
+                    A(i,    N) = 1.0 * weights_(i,n);
+                    A(i+Ns, N) = 0.0 * weights_(i,n);
+                }
                 break;
             case Options::linear:
-                A.block( 0, N, Ns, 1) = MatrixXcd::Ones(Ns, 1);
-                A.block(Ns, N, Ns, 1) = MatrixXcd::Zero(Ns, 1);
                 for (size_t i = 0; i < Ns; ++i) {
-                    A(i,    N+1) = std::real(samples_[i].first);
-                    A(i+Ns, N+1) = std::imag(samples_[i].first);
+                    A(i,    N  ) = 1.0 * weights_(i,n);
+                    A(i+Ns, N  ) = 0.0 * weights_(i,n);
+                    A(i,    N+1) = std::real(samples_[i].first) * weights_(i,n);
+                    A(i+Ns, N+1) = std::imag(samples_[i].first) * weights_(i,n);
                 }
                 break;
             }
@@ -540,6 +562,7 @@ void VectorFitting::fit(){
         E_ = VectorXcd::Zero(Nc);
     }
 
+// TODO Convert into real state-space model.
 //    // Converts into real state-space model
 //    if (!options_.isComplexSpaceState()) {
 //        RowVectorXi cindex = getCIndex(poles_);
