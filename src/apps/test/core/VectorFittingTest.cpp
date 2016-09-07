@@ -34,7 +34,8 @@ class MathFittingVectorFittingTest : public ::testing::Test {
 TEST_F(MathFittingVectorFittingTest, ctor) {
     Options defaultOptions;
     vector<Sample> noSamples;
-    EXPECT_THROW(VectorFitting::VectorFitting(noSamples, 3, defaultOptions),
+    EXPECT_THROW(
+            VectorFitting::VectorFitting(noSamples, 3, defaultOptions),
             runtime_error);
 }
 
@@ -362,10 +363,39 @@ TEST_F(MathFittingVectorFittingTest, ex2){
 
     // Get maximum deviation.
     EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
+
+    // Compares with Gustavssen's poles.
+    vector<Complex> gusPoles = {
+        Complex( - 2.827433388231069e+04, + 0.0                  ),
+        Complex( - 2.576105975943579e+05, + 0.0                  ),
+        Complex( - 6.283185307179983e+02, + 3.141592653589790e+04),
+        Complex( - 6.283185307179983e+02, - 3.141592653589790e+04),
+        Complex( - 7.539822368615460e+02, + 9.424777960769372e+04),
+        Complex( - 7.539822368615460e+02, - 9.424777960769372e+04),
+        Complex( - 1.884955592153879e+04, + 2.199114857512855e+05),
+        Complex( - 1.884955592153879e+04, - 2.199114857512855e+05),
+        Complex( - 1.256637061435897e+03, + 2.827433388230813e+05),
+        Complex( - 1.256637061435897e+03, - 2.827433388230813e+05),
+        Complex( - 9.424777960769381e+03, + 2.827433388230815e+05),
+        Complex( - 9.424777960769381e+03, - 2.827433388230815e+05),
+        Complex( - 3.141592653589785e+03, + 4.398229715025704e+05),
+        Complex( - 3.141592653589785e+03, - 4.398229715025704e+05),
+        Complex( - 6.283185307179650e+03, + 4.586725274241097e+05),
+        Complex( - 6.283185307179650e+03, - 4.586725274241097e+05),
+        Complex( - 1.256637061435921e+04, + 5.654866776461634e+05),
+        Complex( - 1.256637061435921e+04, - 5.654866776461634e+05)};
+
+    vector<Complex> obtPoles = fitting.getPoles();
+    EXPECT_EQ(gusPoles.size(), obtPoles.size());
+    for (size_t i = 0; i < gusPoles.size(); ++i) {
+        EXPECT_NEAR(gusPoles[i].real(), obtPoles[i].real(), 1e-6);
+        EXPECT_NEAR(gusPoles[i].imag(), obtPoles[i].imag(), 1e-6);
+    }
+
 }
 
 // Test Gustavsen's 1999 paper example described in section 4
-TEST_F(MathFittingVectorFittingTest, paper) {
+TEST_F(MathFittingVectorFittingTest, paperSection4) {
     // Known poles
     vector<Complex> knownPoles;
     knownPoles.push_back(Complex(-  4500,       0));
