@@ -50,6 +50,9 @@ endif
 ifeq ($(target),release)
    	CXXFLAGS +=-O2
 endif
+ifeq ($(target),optimal)
+   	CXXFLAGS +=-O3
+endif
 # =============================================================================
 # -------------------- Paths to directories -----------------------------------
 BUILD_DIR = ./build/
@@ -75,7 +78,8 @@ create_dirs:
 test: check
 	$(MAKE) -f ./src/apps/test/test.mk print
 	$(MAKE) -f ./src/apps/test/test.mk
-
+#	cp -r testData $(BIN_DIR)test/
+	
 clean:
 	rm -rf $(OBJ_DIR)
 
@@ -85,9 +89,11 @@ clobber: clean
 check:
 ifneq ($(target),release)
 ifneq ($(target),debug)
+ifneq ($(target),optimal)
 	@echo "Invalid build target."
-	@echo "Please use 'make target=release' or 'make target=debug'"
+	@echo "Please use target=[release|debug|optimal]"
 	@exit 1
+endif
 endif
 endif
 ifneq ($(compiler),intel)

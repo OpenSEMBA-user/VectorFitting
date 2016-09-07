@@ -52,10 +52,11 @@ public:
      * @param order     Order of approximation.
      * @param options   Options.
      */
-    VectorFitting(
-            const std::vector<Sample>& samples,
+    VectorFitting(const std::vector<Sample>& samples,
             const size_t order,
-            const Options& options);
+            const Options& options,
+            const std::vector<std::vector<Real>>& weights =
+                    std::vector<std::vector<Real>>());
 
     /**
      * Build a fitter with starting poles provided by the user. order_ and
@@ -65,8 +66,10 @@ public:
      * @param options   Options.
      */
     VectorFitting(const std::vector<Sample>& samples,
-                  const std::vector<Complex>& poles,
-                  const Options& options);
+            const std::vector<Complex>& poles,
+            const Options& options,
+            const std::vector<std::vector<Real>>& weight =
+                    std::vector<std::vector<Real>>());
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
@@ -78,12 +81,14 @@ public:
     /**
      *  Getters to fitting coefficents.
      */
-    VectorXcd getA() {return A_;}    // Size: N, 1.
+    MatrixXcd getA() {return A_;}    // Size:  N, N.
     MatrixXcd getC() {return C_;}    // Size: Nc, N.
-    RowVectorXi getB() {return B_;}  // Size: 1,  N.
-    MatrixXcd getD() {return D_;}    // Size: Nc, Nc.
-    MatrixXcd getE() {return E_;}    // Size: Nc, Nc.
-    Real getRMSE();
+    RowVectorXi getB() {return B_;}  // Size:  1, N.
+    VectorXcd getD() {return D_;}    // Size:  1, Nc.
+    VectorXcd getE() {return E_;}    // Size:  1, Nc.
+    Real getRMSE() const;
+    Real getMaxDeviation() const;
+    void setOptions(const Options& options);
 
 private:
     Options options_;
@@ -92,7 +97,7 @@ private:
     VectorXcd poles_;
 
     MatrixXcd A_, C_;
-    RowVectorXcd D_, E_;
+    VectorXcd D_, E_;
     RowVectorXi B_;
 
     MatrixXd weights_; // Size: Ns, Nc
@@ -102,7 +107,8 @@ private:
 
     void init(const std::vector<Sample>& samples,
               const std::vector<Complex>& poles,
-              const Options& options);
+              const Options& options,
+              const std::vector<std::vector<Real>>& weights);
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;
