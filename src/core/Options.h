@@ -65,7 +65,8 @@ private:
     PolesType polesType_;
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
-//    bool complexSpaceState_;
+    bool complexSpaceState_;
+    bool poleResidue_;//¿? no me convence meterlo aqui
 };
 
 } /* namespace VectorFitting */

@@ -582,7 +582,7 @@ void VectorFitting::fit(){
         E_ = VectorXcd::Zero(Nc);
     }
 
-// TODO Convert into real state-space model.
+// TODO Convert into real state-space model.  //line 822 and beyond
 //    // Converts into real state-space model
 //    if (!options_.isComplexSpaceState()) {
 //        RowVectorXi cindex = getCIndex(poles_);
