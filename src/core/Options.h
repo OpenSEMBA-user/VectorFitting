@@ -33,10 +33,16 @@ public:
         linear
     };
 
+    enum PolesType {
+    	lincmplx,
+		logcmplx
+    };
+
     Options();
     virtual ~Options();
 
     AsymptoticTrend getAsymptoticTrend() const;
+    PolesType getPolesType() const;
     bool isRelax() const;
     bool isSkipPoleIdentification() const;
     bool isSkipResidueIdentification() const;
@@ -44,6 +50,7 @@ public:
     bool isComplexSpaceState() const;
 
     void setAsymptoticTrend(AsymptoticTrend asymptoticTrend);
+    void setPolesType(PolesType polesType);
     void setRelax(bool relax);
     void setSkipPoleIdentification(bool skipPoleIdentification);
     void setSkipResidueIdentification(bool skipResidueIdentification);
@@ -51,9 +58,11 @@ public:
     void setComplexSpaceState(bool complexSpaceState);
 
 private:
+
     bool relax_;
     bool stable_;
     AsymptoticTrend asymptoticTrend_;
+    PolesType polesType_;
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
 //    bool complexSpaceState_;

@@ -118,9 +118,7 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
-    if (order % 2 != 0) {
-        throw std::runtime_error("Default starting poles are complex, order must be even");
-    }
+
 
     // Define starting poles as a vector of complex conjugates -a + bi with
     // the imaginary part linearly distributed over the frequency range of
@@ -137,7 +135,16 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     // distribution covering the range in the samples.
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
-    std::vector<Real> imagParts = linspace(range, order/2);
+
+    if (options.getPolesType() == Options::PolesType::lincmplx) {
+    	std::vector<Real> imagParts = linspace(range, order/2);
+
+    } else {
+    	throw std::runtime_error("Option for logarithmically distributed initial"
+    			   	   	  "poles hasn't been implemented yet");
+
+    }
+
 
     // Generate all the starting poles
     std::vector<Complex> poles(order);
@@ -148,6 +155,15 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
         poles[i] = Complex(real, imag);
         poles[i+1] = conj(poles[i]);
     }
+
+
+    if (order % 2 != 0) {
+    	std::complex<Real> extraPole;
+        extraPole = -(samples.back().first + samples[0].first)/2.0;
+        poles.push_back(extraPole);
+    }
+
+
 
     init(samples, poles, options, weights);
 }

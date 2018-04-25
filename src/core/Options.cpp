@@ -28,6 +28,7 @@ Options::Options() {
     relax_                     = true;
     stable_                    = true;
     asymptoticTrend_           = constant;
+    polesType_ 				   = lincmplx;
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
 //    complexSpaceState_         = true;
@@ -40,9 +41,18 @@ Options::AsymptoticTrend Options::getAsymptoticTrend() const {
     return asymptoticTrend_;
 }
 
+Options::PolesType Options::getPolesType() const {
+	return polesType_;
+}
+
 void Options::setAsymptoticTrend(
         Options::AsymptoticTrend asymptoticTrend) {
     asymptoticTrend_ = asymptoticTrend;
+}
+
+void Options::setPolesType(
+		Options::PolesType polesType) {
+	polesType_ = polesType;
 }
 
 bool Options::isRelax() const {
