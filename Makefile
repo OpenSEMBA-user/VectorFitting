@@ -26,14 +26,6 @@
 target   = release
 compiler = gnu
 
-DEFINES += APP_VERSION=$(APP_VERSION)
-# ==================== Intel Compiler =========================================
-ifeq ($(compiler),intel)
-	CC       = icc
-	CXX      = icpc
-	CCFLAGS  +=
-	CXXFLAGS +=
-endif # end of If choosing Intel compiler.
 #===================== GNU Compiler ===========================================
 ifeq ($(compiler),gnu)
 	CC = gcc
@@ -44,8 +36,7 @@ endif # endif choosing the GNU compiler.
 # ================= Optimization target =======================================
 ifeq ($(target),debug)
 	CXXFLAGS +=-O0 -g3 -Wall -Wno-write-strings
-	# Other options: -Wconversion -fprofile-arcs -ftest-coverage
-	DEFINES +=_DEBUG
+
 endif
 ifeq ($(target),release)
    	CXXFLAGS +=-O2
@@ -53,6 +44,7 @@ endif
 ifeq ($(target),optimal)
    	CXXFLAGS +=-O3
 endif
+
 # =============================================================================
 # -------------------- Paths to directories -----------------------------------
 BUILD_DIR = ./build/
@@ -69,17 +61,17 @@ LIB_DIR = $(BUILD_DIR)lib/
 default: all
 	@echo "======>>>>> Done <<<<<======"
 
-all: check test
-
-create_dirs:
-	@echo 'Creating directories to store binaries and intermediate objects'
-	-mkdir -p $(OBJ_DIR)
+all: check test vectorfitting
 
 test: check
 	$(MAKE) -f ./src/apps/test/test.mk print
 	$(MAKE) -f ./src/apps/test/test.mk
 #	cp -r testData $(BIN_DIR)test/
-	
+
+vectorfitting: check
+	$(MAKE) -f ./src/apps/vectorfitting/vectorfitting.mk print
+	$(MAKE) -f ./src/apps/vectorfitting/vectorfitting.mk
+
 clean:
 	rm -rf $(OBJ_DIR)
 
@@ -96,16 +88,10 @@ ifneq ($(target),optimal)
 endif
 endif
 endif
-ifneq ($(compiler),intel)
 ifneq ($(compiler),gnu)
-ifneq ($(compiler),mingw32)
-ifneq ($(compiler),mingw64)
 	@echo "Invalid build compiler"
 	@echo "Please use 'make compiler= intel|gnu|mingw32|mingw64'"
 	@exit 2
-endif
-endif
-endif
 endif
 
 # Exports current variables when other makefiles are called.

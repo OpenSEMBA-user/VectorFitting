@@ -114,7 +114,7 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
-    if (order % 2 == 0) {
+    if (order % 2 != 0) {
         throw std::runtime_error("Default starting poles are complex, order must be even");
     }
 
