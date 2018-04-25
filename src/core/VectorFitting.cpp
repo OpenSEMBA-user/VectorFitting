@@ -68,8 +68,12 @@ void VectorFitting::init(const std::vector<Sample>& samples,
         currentPole = poles[i];
 
         if(!isReal(currentPole)){
-            assert(conj(currentPole) == poles[i+1]);
-            i++;
+            if (conj(currentPole) == poles[i+1]) {
+                i++;
+            } else {
+                throw std::runtime_error(
+                   "Poles with imaginary parts must be complex conjugated");
+            }
         }
     }
 
