@@ -26,10 +26,6 @@ if (GTEST_FOUND)
                         ${CMAKE_CURRENT_LIST_DIR})
     add_sources(. SRCS)
 
-    add_executable(opensemba_test ${SRCS})
-    target_link_libraries(opensemba_test opensemba_core_argument
-                                         opensemba_core_data
-                                         opensemba_parser_gid
-                                         opensemba_parser_stl
-                                         ${GTEST_BOTH_LIBRARIES})
+    add_executable(vectorfitting_test ${SRCS})
+    target_link_libraries(vectorfitting_test vectorfitting) 
 endif()
