@@ -66,6 +66,7 @@ add_definitions(-DAPP_VERSION="0.2")
 option(Compile_GTest ON)
 if (Compile_GTest)
     find_package(GTest)
+    include_directories(${CMAKE_CURRENT_LIST_DIR}/apps/test/ )
 endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}
