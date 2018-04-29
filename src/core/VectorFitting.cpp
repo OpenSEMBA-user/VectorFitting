@@ -135,14 +135,12 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     // distribution covering the range in the samples.
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
-
+	std::vector<Real> imagParts;
     if (options.getPolesType() == Options::PolesType::lincmplx) {
-    	std::vector<Real> imagParts = linspace(range, order/2);
-
+    	imagParts = linspace(range, order/2);
     } else {
     	throw std::runtime_error("Option for logarithmically distributed initial"
     			   	   	  "poles hasn't been implemented yet");
-
     }
 
 

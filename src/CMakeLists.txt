@@ -70,6 +70,6 @@ endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${CMAKE_CURRENT_LIST_DIR}/core/
-                    ../external/eigen/)
+                    ../external/)
 
 add_subdirectory  (./core/ obj/src/core)
