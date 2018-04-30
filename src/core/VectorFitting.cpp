@@ -2,7 +2,6 @@
 // Copyright (C) 2015 Salvador Gonzalez Garcia        (salva@ugr.es)
 //                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
 //                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
-//                    Daniel Mateos Romero            (damarro@semba.guru)
 //                    Alejandro García Montoro        (alejandro.garciamontoro@gmail.com)
 //
 // This file is part of OpenSEMBA.
@@ -32,7 +31,7 @@ namespace VectorFitting {
 struct {
     bool operator()(Sample a, Sample b)
     {
-        return a.first.imag() < b.first.imag();
+        return lower(a.first.imag(), b.first.imag());
     }
 } sampleOrdering;
 
@@ -40,11 +39,11 @@ struct {
 struct {
     bool operator()(Complex a, Complex b)
     {
-        if (a.real() < b.real()) {
+        if (lower(a.real(), b.real())) {
             return true;
         }
-        if (a.real() == b.real()) {
-            return a.imag() < b.imag();
+        if (equal(a.real(), b.real())) {
+            return lower(a.imag(), b.imag());
         }
         return false;
     }
@@ -55,7 +54,7 @@ bool isReal(Complex n){
     return equal(n.imag(), 0.0);
 }
 
-void VectorFitting::init(const std::vector<Sample>& samples,
+void Fitting::init(const std::vector<Sample>& samples,
                          const std::vector<Complex>& poles,
                          const Options& options,
                          const std::vector<std::vector<Real>>& weights) {
@@ -101,7 +100,7 @@ void VectorFitting::init(const std::vector<Sample>& samples,
     }
 }
 
-VectorFitting::VectorFitting(const std::vector<Sample>& samples,
+Fitting::Fitting(const std::vector<Sample>& samples,
         const std::vector<Complex>& poles,
         const Options& options,
         const std::vector<std::vector<Real>>& weights) {
@@ -111,7 +110,7 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     init(samples, poles, options, weights);
 }
 
-VectorFitting::VectorFitting(const std::vector<Sample>& samples,
+Fitting::Fitting(const std::vector<Sample>& samples,
         const size_t order,
         const Options& options,
         const std::vector<std::vector<Real>>& weights) {
@@ -166,7 +165,7 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     init(samples, poles, options, weights);
 }
 
-void VectorFitting::fit(){
+void Fitting::fit(){
     // Following Gustavssen notation in vectfit3.m .
     const size_t Ns = getSamplesSize();
     const size_t N  = getOrder();
@@ -617,7 +616,7 @@ void VectorFitting::fit(){
  * computed with the model in (2).
  * @return A std::vector of Samples obtained with the fitted parameters.
  */
-std::vector<Sample> VectorFitting::getFittedSamples() const {
+std::vector<Sample> Fitting::getFittedSamples() const {
     const size_t N  = getOrder();
     const size_t Ns = getSamplesSize();
     const size_t Nc = getResponseSize();
@@ -656,7 +655,7 @@ std::vector<Sample> VectorFitting::getFittedSamples() const {
     return res;
 }
 
-std::vector<Complex> VectorFitting::getPoles() {
+std::vector<Complex> Fitting::getPoles() {
     std::vector<Complex> res(poles_.rows());
     for (int i = 0; i < poles_.rows(); ++i) {
         res[i] = poles_[i];
@@ -669,7 +668,7 @@ std::vector<Complex> VectorFitting::getPoles() {
  * square of the estimated data with respect to the samples.
  * @return Real - Root mean square error of the model.
  */
-Real VectorFitting::getRMSE() const {
+Real Fitting::getRMSE() const {
     std::vector<Sample> fittedSamples = getFittedSamples();
 
     Real error = 0.0;
@@ -696,7 +695,7 @@ Real VectorFitting::getRMSE() const {
     return res;
 }
 
-Real VectorFitting::getMaxDeviation() const {
+Real Fitting::getMaxDeviation() const {
     std::vector<Sample> fittedSamples = getFittedSamples();
     std::vector<Real> dev(fittedSamples.size(), 0.0);
 
@@ -711,20 +710,20 @@ Real VectorFitting::getMaxDeviation() const {
     return *std::max_element(dev.begin(), dev.end());
 }
 
-size_t VectorFitting::getSamplesSize() const {
+size_t Fitting::getSamplesSize() const {
     return samples_.size();
 }
 
-size_t VectorFitting::getResponseSize() const {
+size_t Fitting::getResponseSize() const {
     assert(samples_.size() > 0);
     return samples_.front().second.size();
 }
 
-size_t VectorFitting::getOrder() const {
+size_t Fitting::getOrder() const {
     return (size_t) poles_.rows();
 }
 
-RowVectorXi VectorFitting::getCIndex(const VectorXcd& poles) {
+RowVectorXi Fitting::getCIndex(const VectorXcd& poles) {
     const size_t N = poles.rows();
     RowVectorXi cindex = RowVectorXi::Zero(N);
     for (size_t m = 0; m < N; ++m) {
@@ -744,7 +743,7 @@ RowVectorXi VectorFitting::getCIndex(const VectorXcd& poles) {
     return cindex;
 }
 
-void VectorFitting::setOptions(const Options& options) {
+void Fitting::setOptions(const Options& options) {
     options_ = options;
 }
 

@@ -62,15 +62,13 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 add_definitions(-DAPP_VERSION="0.2")
-
-option(Compile_GTest ON)
-if (Compile_GTest)
-    find_package(GTest)
-    include_directories(${CMAKE_CURRENT_LIST_DIR}/apps/test/ )
-endif()
+add_definitions(-D_USE_MATH_DEFINES)
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${CMAKE_CURRENT_LIST_DIR}/core/
                     ../external/)
+
+find_package(GTest)
+add_subdirectory(./apps/test/ obj/src/apps/test/)
 
 add_subdirectory  (./core/ obj/src/core)

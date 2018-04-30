@@ -29,19 +29,18 @@
 using namespace VectorFitting;
 using namespace std;
 
-class MathFittingVectorFittingTest : public ::testing::Test {
+class VectorFittingTest : public ::testing::Test {
 
 };
 
-TEST_F(MathFittingVectorFittingTest, ctor) {
+TEST_F(VectorFittingTest, ctor) {
     Options defaultOptions;
     vector<Sample> noSamples;
-    EXPECT_THROW(VectorFitting::VectorFitting(noSamples, 3, defaultOptions),
-            runtime_error);
+    EXPECT_THROW(Fitting(noSamples, 3, defaultOptions), runtime_error);
 }
 
 // Test first example of Bjorn Gustavsen's code
-TEST_F(MathFittingVectorFittingTest, ex1) {
+TEST_F(VectorFittingTest, ex1) {
     // Define samples frequencies
     const size_t nS = 101;
     vector<Sample> samples(nS);
@@ -87,7 +86,7 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
 
-    VectorFitting::VectorFitting fitting(samples, poles, opts);
+    Fitting fitting(samples, poles, opts);
     fitting.fit();
 
     // Compare poles.
@@ -240,7 +239,7 @@ TEST_F(MathFittingVectorFittingTest, ex1) {
     EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
 }
 
-TEST_F(MathFittingVectorFittingTest, ex2){
+TEST_F(VectorFittingTest, ex2){
     // Order of approximation
     const int N = 18;
 
@@ -349,7 +348,7 @@ TEST_F(MathFittingVectorFittingTest, ex2){
     opts.setSkipResidueIdentification(true);
 
     const size_t nIter = 3;
-    VectorFitting::VectorFitting fitting(samples, startingPoles, opts);
+    Fitting fitting(samples, startingPoles, opts);
     for (size_t iter = 0; iter < nIter; ++iter) {
         if (iter == nIter-1) {
             opts.setSkipResidueIdentification(false);
@@ -394,7 +393,7 @@ TEST_F(MathFittingVectorFittingTest, ex2){
 
 }
 
-TEST_F(MathFittingVectorFittingTest, ex4a){
+TEST_F(VectorFittingTest, ex4a){
 
     // Reads raw data from file.
     ifstream file("testData/fdne.txt");
@@ -451,7 +450,7 @@ TEST_F(MathFittingVectorFittingTest, ex4a){
     opts.setSkipResidueIdentification(false);
 
     const size_t Niter = 4; // RMS is not reduced after this...
-    VectorFitting::VectorFitting fitting(f, poles, opts, weights);
+    Fitting fitting(f, poles, opts, weights);
     Real rmse = numeric_limits<Real>::max();
     for (size_t iter = 0; iter < Niter; ++iter) {
         fitting.fit();
@@ -467,7 +466,7 @@ TEST_F(MathFittingVectorFittingTest, ex4a){
 }
 
 // Test Gustavsen's 1999 paper example described in section 4
-TEST_F(MathFittingVectorFittingTest, paperSection4) {
+TEST_F(VectorFittingTest, paperSection4) {
     // Known poles
     vector<Complex> knownPoles;
     knownPoles.push_back(Complex(-  4500,       0));
@@ -571,7 +570,7 @@ TEST_F(MathFittingVectorFittingTest, paperSection4) {
     Options opts;
     opts.setAsymptoticTrend(Options::linear);
 
-    VectorFitting::VectorFitting fitting(knownResponses, poles, opts);
+    Fitting fitting(knownResponses, poles, opts);
     fitting.fit();
 
     // Error check

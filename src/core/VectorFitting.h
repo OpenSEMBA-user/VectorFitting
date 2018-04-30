@@ -43,7 +43,7 @@ typedef std::complex<Real> Complex;
  */
 typedef std::pair<Complex, std::vector<Complex>> Sample;
 
-class VectorFitting {
+class Fitting {
 public:
 
     /**
@@ -52,7 +52,7 @@ public:
      * @param order     Order of approximation.
      * @param options   Options.
      */
-    VectorFitting(const std::vector<Sample>& samples,
+    Fitting(const std::vector<Sample>& samples,
             const size_t order,
             const Options& options,
             const std::vector<std::vector<Real>>& weights =
@@ -65,7 +65,7 @@ public:
      * @param poles     Starting poles.
      * @param options   Options.
      */
-    VectorFitting(const std::vector<Sample>& samples,
+    Fitting(const std::vector<Sample>& samples,
             const std::vector<Complex>& poles,
             const Options& options,
             const std::vector<std::vector<Real>>& weight =
