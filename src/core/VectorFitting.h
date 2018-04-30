@@ -107,8 +107,7 @@ private:
 
     void init(const std::vector<Sample>& samples,
               const std::vector<Complex>& poles,
-              const Options& options,
-              const std::vector<std::vector<Real>>& weights);
+              const Options& options);
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;

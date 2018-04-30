@@ -56,8 +56,7 @@ bool isReal(Complex n){
 
 void Fitting::init(const std::vector<Sample>& samples,
                          const std::vector<Complex>& poles,
-                         const Options& options,
-                         const std::vector<std::vector<Real>>& weights) {
+                         const Options& options) {
     options_ = options;
 
     // Sanity check: the complex poles should come in pairs; otherwise, there
@@ -81,23 +80,6 @@ void Fitting::init(const std::vector<Sample>& samples,
     for (size_t i = 0; i < poles.size(); ++i) {
         poles_(i) = poles[i];
     }
-    if (weights.size() != 0 && weights.size() != samples.size()) {
-        throw std::runtime_error("Weights and samples must have same size.");
-    }
-    if (weights.size() == 0) {
-        weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
-    } else {
-        weights_ = MatrixXd::Zero(getSamplesSize(), getResponseSize());
-        for (size_t i = 0; i < getSamplesSize(); ++i) {
-            if (weights[i].size() != getResponseSize()) {
-                throw std::runtime_error(
-                        "All weights must have the same size as the samples");
-            }
-            for (size_t j = 0; j < getResponseSize(); ++j) {
-                weights_(i,j) = weights[i][j];
-            }
-        }
-    }
 }
 
 Fitting::Fitting(const std::vector<Sample>& samples,
@@ -107,7 +89,7 @@ Fitting::Fitting(const std::vector<Sample>& samples,
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
-    init(samples, poles, options, weights);
+    init(samples, poles, options);
 }
 
 Fitting::Fitting(const std::vector<Sample>& samples,
@@ -159,7 +141,7 @@ Fitting::Fitting(const std::vector<Sample>& samples,
         	poles.push_back(extraPole);
     	}
 
-   	Fitting::init(samples, poles, options, weights);
+   	Fitting::init(samples, poles, options);
     } else {
 
     	throw std::runtime_error("Option for logarithmically distributed initial"
@@ -588,36 +570,35 @@ void Fitting::fit(){
 
     //Line 819
 
-// TODO Convert into real state-space model.
-//    // Converts into real state-space model
-//    if (!options_.isComplexSpaceState()) {
-//        RowVectorXi cindex = getCIndex(poles_);
-//        size_t n = 0;
-//        for (size_t m = 0; m < N; ++m) {
-//            if (cindex(m) == 1) {
-//                Real a1 = std::real(A_(n,n));
-//                Real a2 = std::imag(A_(n,n));
-//                VectorXcd c1(Nc), c2(Nc);
-//                for (size_t i = 0; i < Nc; ++i) {
-//                    c1(i) = std::real(C_(i,n));
-//                    c2(i) = std::imag(C_(i,n));
-//                }
-//                Real b1 =   2.0 * std::real(B_(n));
-//                Real b2 = - 2.0 * std::imag(B_(n));
-//                Matrix2cd Ablock;
-//                Ablock(0,0) =   a1;
-//                Ablock(0,1) =   a2;
-//                Ablock(1,0) = - a2;
-//                Ablock(1,1) =   a1;
-//                A_.block(n,n,2,2) = Ablock;
-//                C_.block(0,   n, Nc, 1) = c1;
-//                C_.block(0, n+1, Nc, 1) = c2;
-//                B_(n  ) = b1;
-//                B_(n+1) = b2;
-//            }
-//            n++;
-//        }
-//    }
+    // Converts into real state-space model
+    if (!options_.isComplexSpaceState()) {
+        RowVectorXi cindex = getCIndex(poles_);
+        size_t n = 0;
+        for (size_t m = 0; m < N; ++m) {
+            if (cindex(m) == 1) {
+                Real a1 = std::real(A_(n,n));
+                Real a2 = std::imag(A_(n,n));
+                VectorXcd c1(Nc), c2(Nc);
+                for (size_t i = 0; i < Nc; ++i) {
+                    c1(i) = std::real(C_(i,n));
+                    c2(i) = std::imag(C_(i,n));
+                }
+                Real b1 =   2.0 * std::real(B_(n));
+                Real b2 = - 2.0 * std::imag(B_(n));
+                Matrix2cd Ablock;
+                Ablock(0,0) =   a1;
+                Ablock(0,1) =   a2;
+                Ablock(1,0) = - a2;
+                Ablock(1,1) =   a1;
+                A_.block(n,n,2,2) = Ablock;
+                C_.block(0,   n, Nc, 1) = c1;
+                C_.block(0, n+1, Nc, 1) = c2;
+                B_(n  ) = b1;
+                B_(n+1) = b2;
+            }
+            n++;
+        }
+    }
 }
 
 /**
