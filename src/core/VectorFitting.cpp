@@ -144,26 +144,29 @@ Fitting::Fitting(const std::vector<Sample>& samples,
 	std::vector<Real> imagParts;
     if (options.getPolesType() == Options::PolesType::lincmplx) {
     	imagParts = linspace(range, order/2);
- 	// Generate all the starting poles
+    // Generate all the starting poles
     	std::vector<Complex> poles(order);
 	for (size_t i = 0; i < order; i+=2) {
         	Real imag = imagParts[i/2];
         	Real real = - imag / (Real) 100.0;
         	poles[i] = Complex(real, imag);
         	poles[i+1] = conj(poles[i]);
-	}
+		}
 
    	if (order % 2 != 0) {
-    		td::complex<Real> extraPole;
+    		std::complex<Real> extraPole;
         	extraPole = -(samples.back().first + samples[0].first)/2.0;
         	poles.push_back(extraPole);
     	}
+
+   	Fitting::init(samples, poles, options, weights);
     } else {
+
     	throw std::runtime_error("Option for logarithmically distributed initial"
     			   	   	  "poles hasn't been implemented yet");
     }
 
-    init(samples, poles, options, weights);
+
 }
 
 void Fitting::fit(){
