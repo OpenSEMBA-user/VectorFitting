@@ -44,6 +44,7 @@ public:
     AsymptoticTrend getAsymptoticTrend() const;
     PolesType getPolesType() const;
     bool isRelax() const;
+
     bool isSkipPoleIdentification() const;
     bool isSkipResidueIdentification() const;
     bool isStable() const;
@@ -66,7 +67,7 @@ private:
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
     bool complexSpaceState_;
-    bool poleResidue_;//¿? no me convence meterlo aqui
+
 };
 
 } /* namespace VectorFitting */

@@ -119,6 +119,12 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
         throw std::runtime_error("Samples size cannot be zero");
     }
 
+    if (options.getPolesType() != Options::PolesType::lincmplx) {
+       	throw std::runtime_error("Option for logarithmically distributed initial"
+       	    			   	   	  "poles hasn't been implemented yet");
+
+    }
+
 
     // Define starting poles as a vector of complex conjugates -a + bi with
     // the imaginary part linearly distributed over the frequency range of
@@ -136,16 +142,8 @@ VectorFitting::VectorFitting(const std::vector<Sample>& samples,
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
 
-    if (options.getPolesType() == Options::PolesType::lincmplx) {
-    	std::vector<Real> imagParts = linspace(range, order/2);
 
-    } else {
-    	throw std::runtime_error("Option for logarithmically distributed initial"
-    			   	   	  "poles hasn't been implemented yet");
-
-    }
-
-
+    std::vector<Real> imagParts = linspace(range, order/2);
     // Generate all the starting poles
     std::vector<Complex> poles(order);
 
@@ -244,7 +242,7 @@ void VectorFitting::fit(){
                 break;
             }
 
-            // Computes AA and bb.
+            // Computes AA and bb. Corresponding line in vectfit3.m code: 319
             MatrixXd AA = MatrixXd::Zero(Nc*(N+1), N+1);
             VectorXd bb = VectorXd::Zero(Nc*(N+1));
             for (size_t n = 0; n < Nc; ++n) {
@@ -280,7 +278,7 @@ void VectorFitting::fit(){
                     }
                 }
 
-                // Performs QR decomposition.
+                // Performs QR decomposition. Line 350
                 MatrixXd Q, R;
                 HouseholderQR<MatrixXd> qr(A.rows(), A.cols());
                 qr.compute(A);
@@ -298,7 +296,7 @@ void VectorFitting::fit(){
                 }
             }  // End of for loop n=1:Nc
 
-            // Computes scaling factor.
+            // Computes scaling factor. Line 360
             VectorXd Escale = VectorXd::Zero(N+1);
             for (size_t col = 0; col < N+1; ++col) {
                 Escale(col) = 1.0 / AA.col(col).norm();
@@ -314,14 +312,14 @@ void VectorFitting::fit(){
 
         } // End of if for "relax" flag.
 
-        if (!options_.isRelax()
+        if (!options_.isRelax() //Line 372
                 || lower  (std::abs(x(0)), toleranceLow_)
                 || greater(std::abs(x(N)), toleranceHigh_) ) {
             throw std::runtime_error("Option to do not relax is not implemented");
             // TODO Implement this.
         }
 
-        VectorXcd C = VectorXcd::Zero(N);
+        VectorXcd C = VectorXcd::Zero(N); // Line 433
         for (int i = 0; i < x.rows()-1; ++i) {
             C(i) = x(i);
         }
@@ -335,7 +333,7 @@ void VectorFitting::fit(){
         }
         Real D = x(x.rows()-1);
 
-        // Calculates the zeros for sigma.
+        // Calculates the zeros for sigma. Line 481
         VectorXi B = VectorXi::Ones(N);
         size_t m = 0;
         for (size_t n = 0; n < N; ++n) {
@@ -371,14 +369,14 @@ void VectorFitting::fit(){
             }
         }
 
-        MatrixXd ZER = MatrixXd::Zero(N,N);
+        MatrixXd ZER = MatrixXd::Zero(N,N);//Line 498
         for (size_t i = 0; i < N; ++i) {
             for (size_t j = 0; j < N; ++j) {
                 ZER(i,j) = std::real(LAMBD(i,j)) - (Real) B(i) * std::real(C(j)) / D;
             }
         }
 
-        // Stores roetter
+        // Stores roetter. Lines 499-504
         roetter = EigenSolver<MatrixXd>(ZER, false).eigenvalues();
         if (options_.isStable()) {
             for (size_t i = 0; i < N; ++i) {
@@ -517,7 +515,7 @@ void VectorFitting::fit(){
                 break;
             }
 
-            // Computes scaling factor.
+            // Computes scaling factor.Line 624
             VectorXd Escale(A.cols());
             for (int col = 0; col < A.cols(); ++col) {
                 Escale(col) = A.col(col).norm();
@@ -547,7 +545,7 @@ void VectorFitting::fit(){
                 SERE(n) = X(N+1);
                 break;
             }
-        } // End of loop over Nc responses.
+        } // End of loop over Nc responses.Line 696
 
         for (size_t m = 0; m < N; ++m) {
             if (cindex(m) == 1) {
@@ -564,6 +562,9 @@ void VectorFitting::fit(){
         SERB = VectorXi::Ones(N);
         SERC = C;
     } // End of if for "skip residue identification" flag.
+
+
+    //Line 812
 
     A_ = MatrixXcd::Zero(N,N);
     for (size_t i = 0; i < N; ++i) {
@@ -582,7 +583,9 @@ void VectorFitting::fit(){
         E_ = VectorXcd::Zero(Nc);
     }
 
-// TODO Convert into real state-space model.  //line 822 and beyond
+    //Line 819
+
+// TODO Convert into real state-space model.
 //    // Converts into real state-space model
 //    if (!options_.isComplexSpaceState()) {
 //        RowVectorXi cindex = getCIndex(poles_);
