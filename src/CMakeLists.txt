@@ -1,24 +1,3 @@
-# OpenSEMBA
-# Copyright (C) 2015 Salvador Gonzalez Garcia        (salva@ugr.es)
-#                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
-#                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
-#                    Daniel Mateos Romero            (damarro@semba.guru)
-#
-# This file is part of OpenSEMBA.
-#
-# OpenSEMBA is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License as published by the Free
-# Software Foundation, either version 3 of the License, or (at your option)
-# any later version.
-#
-# OpenSEMBA is distributed in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
-# details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
-
 cmake_minimum_required(VERSION 2.8)
 
 macro(add_subdirectories dir bin)
@@ -63,9 +42,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_subdirectory  (../external obj/external)
-
-project(opensemba CXX)
+project(vectorfitting CXX)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -76,28 +53,22 @@ endif()
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(CheckCXXCompilerFlag)
     check_cxx_compiler_flag("-std=c++11" compiler_supports_cxx11)
-    check_cxx_compiler_flag("-std=c++0x" compiler_supports_cxx0X)
     if(compiler_supports_cxx11)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    elseif(compiler_supports_cxx0X)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
     else()
         message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. "
                             "Please use a different C++ compiler.")
     endif()
 endif()
 
-add_definitions(-DAPP_VERSION="0.11")
+add_definitions(-DAPP_VERSION="0.2")
+add_definitions(-D_USE_MATH_DEFINES)
+
+include_directories(${CMAKE_CURRENT_LIST_DIR}
+                    ${CMAKE_CURRENT_LIST_DIR}/core/
+                    ../external/)
 
 find_package(GTest)
+add_subdirectory(./apps/test/ obj/src/apps/test/)
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}/../external/
-                    ${CMAKE_CURRENT_LIST_DIR}
-                    ${CMAKE_CURRENT_LIST_DIR}/core/)
-add_subdirectory  (core     obj/src/core)
-add_subdirectories(parser   obj/src)
-add_subdirectory  (mesher   obj/src/mesher)
-add_subdirectories(exporter obj/src)
-add_subdirectories(adapter  obj/src)
-add_subdirectory  (solver   obj/src/solver)
-add_subdirectories(apps     obj/src)
+add_subdirectory  (./core/ obj/src/core)
