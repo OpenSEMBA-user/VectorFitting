@@ -26,21 +26,36 @@ namespace VectorFitting {
 
 VFdriver::VFdriver(const std::vector<Sample>& samples,
              const std::vector<Complex>& poles,
-             const Options& options,
+             Options options,
 			 std::vector<std::vector<Real>>& weights,
 			 const std::pair <size_t, size_t> iterations) :
 									iterations_(iterations){
 
 	std::vector<std::vector<Complex>> f = VFdriver::squeeze(samples);
-	VFdriver::calcFsum(f);
+	std::vector<Complex> fSum = VFdriver::calcFsum(f);
 	MatrixXd weightsSum = VFdriver::initWeights(weights);
-	Fitting::Fitting fitting(f, poles, options, weightsSum);
+	Fitting::Fitting fitting1(fSum, poles, options, weightsSum);
 
-	for (size_t i = 0; i < iterations_.first; ++i){
+	for (size_t i = 0; i < iterations_.first; ++i){ //lines 382-392
 
-		Fitting::fit;
+		fitting1.fit;
 
 	}
+
+	Fitting::Fitting fitting2(f,poles,options,weights);
+
+	for (size_t i = 0; i < iterations_.second; ++i){ //lines 394-410
+		if(i == iterations_.second-1){
+			bool skipResidueIdentification = false;
+			options.setSkipResidueIdentification(skipResidueIdentification);
+		}
+
+		fitting2.fit;
+	}
+
+	std::vector<std::vector<Complex>> fFull = tri2full(f);
+
+
 
 };
 
@@ -57,8 +72,8 @@ std::vector<std::vector<Complex>> VFdriver::squeeze(
 
 	std::vector<std::vector<Complex>> f;
 	for (size_t i = 0; i < Fitting::getSamplesSize; ++i){
-		if (i != 1){
-			for (size_t j = 0; j < samples[0].second.size(); ++j){
+		for (size_t j = 0; j < samples[0].second.size(); ++j){
+			if(j!= 1){
 				f[i].push_back(samples[i].second[j]);
 			}
 		}
@@ -70,13 +85,18 @@ std::vector<std::vector<Complex>> VFdriver::squeeze(
 }
 
 
-std::complex calcFsum(std::vector<std::vector<Complex>> f){
+std::vector<Complex> calcFsum(std::vector<std::vector<Complex>> f){
 
 	std::vector<Complex> fSum;
 	for (size_t i; i < f.size(); ++i){
+		Complex sum = 0;
 		for (size_t j; j < f[0].size(); ++j){
-			fSum += f[i][j];
+			if (j != 1){
+				sum += f[i][j];
+			}
 		}
+
+		fSum.push_back(sum);
 	}
 
 	return fSum;
@@ -113,6 +133,41 @@ MatrixXd VFdriver::initWeights(std::vector<std::vector<Real>>& weights){
 }
 
 
+std::vector<std::vector<Complex>> tri2full(
+			std::vector<std::vector<Complex>> f){
+
+	std::vector<std::vector<Complex>> fFull;
+	for (size_t i = 0; i < f.size(); ++i){
+		for (size_t j = 0; j < f[0].size(); ++j){
+			fFull[i].push_back(f[i][j]);
+			if (j == 1){
+				fFull[i].push_back(f[i][j]);
+			}
+		}
+	}
+	return fFull;
+}
+
+void ss2pr() { //assumption: A,B,C are complex
+
+	size_t Nc = Fitting::getC.cols();
+	size_t N = Fitting::getA.rows() / Nc;
+	std::vector<MatrixXd> R;
+
+	for (size_t i = 0; i < N; ++i){
+		MatrixXd Rdum = MatrixXd::Zero(Nc);
+		for (size_t j = 0; j < Nc; ++j){
+			size_t ind = j*N + i;
+			for (size_t k = 0; k < Nc; ++k){
+				Rdum[j][k] += Fitting::getC[k][ind] * Fitting::getB[ind][k];
+			}
+		}
+
+		R.push_back(Rdum);
+	}
+	Fitting::A_.
+
+}
 
 
 }/* namespace VectorFitting */

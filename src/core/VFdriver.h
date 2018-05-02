@@ -19,8 +19,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
-#include <complex>
-
 #include "VectorFitting.h"
 #include "SpaceGenerator.h"
 
@@ -29,9 +27,9 @@ namespace VectorFitting {
 using namespace Eigen;
 
 
+
 class VFdriver {
 
-	friend class Fitting;
 
 public:
 
@@ -45,7 +43,7 @@ public:
 
 	VFdriver(const std::vector<Sample>& samples,
              const size_t order,
-             const Options& options,
+             Options options,
 			 std::vector<std::vector<Real>>& weights,
 		     const std::pair <size_t, size_t> iterations);
 
@@ -59,7 +57,7 @@ public:
 
 	VFdriver(const std::vector<Sample>& samples,
              const std::vector<Complex>& poles,
-             const Options& options,
+             Options options,
 			 std::vector<std::vector<Real>>& weights,
 			 const std::pair <size_t, size_t> iterations);
 
@@ -70,9 +68,15 @@ public:
 
 	std::vector<std::vector<Complex>> squeeze(
 		  const std::vector<Sample>& samples);//lines 305-312
-	std::complex calcFsum(std::vector<std::vector<Complex>> f);//lines 329-347
+
+	std::vector<Complex> calcFsum(std::vector<std::vector<Complex>> f);//lines 329-347
+
 	MatrixXd initWeights(std::vector<std::vector<Real>>& weights);//lines 350-380
 
+	std::vector<std::vector<Complex>> tri2full(
+			 	std::vector<std::vector<Complex>> f);
+
+	void ss2pr();
 
 protected:
 
