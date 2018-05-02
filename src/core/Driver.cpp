@@ -20,11 +20,11 @@
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "VFdriver.h"
+#include "Driver.h"
 
 namespace VectorFitting {
 
-VFdriver::VFdriver(const std::vector<Sample>& samples,
+Driver::Driver(const std::vector<Sample>& samples,
              const std::vector<Complex>& poles,
              Options options,
 			 std::vector<std::vector<Real>>& weights,
@@ -54,6 +54,10 @@ VFdriver::VFdriver(const std::vector<Sample>& samples,
 	std::vector<std::vector<Complex>> fFull = tri2full(f);
 	//set poles and set residues (lines 497-499)
 
+
+
+
+
 	std::vector<Sample> fit;
 
 	if (!fitting2.getFittedSamples().empty) {
@@ -80,7 +84,7 @@ VFdriver::VFdriver(const std::vector<Sample>& samples,
 
 };
 
-std::vector<std::vector<Complex>> VFdriver::squeeze(
+std::vector<std::vector<Complex>> Driver::squeeze(
 				const std::vector<Sample>& samples){
 
 
@@ -127,7 +131,7 @@ std::vector<Complex> calcFsum(std::vector<std::vector<Complex>> f){
 
 }
 
-MatrixXd VFdriver::initWeights(std::vector<std::vector<Real>>& weights){
+MatrixXd Driver::initWeights(std::vector<std::vector<Real>>& weights){
 
 	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
 		throw std::runtime_error("Weights and samples must have same size.");
@@ -190,6 +194,8 @@ void ss2pr() { //assumption: A,B,C are complex
 
 		R.push_back(Rdum);
 	}
+	//a??
+	Fitting::setR(R);
 
 
 }

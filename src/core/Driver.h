@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
-#include "VectorFitting.h"
+#include "Fitting.h"
 #include "SpaceGenerator.h"
 
 namespace VectorFitting {
@@ -28,7 +28,7 @@ using namespace Eigen;
 
 
 
-class VFdriver {
+class Driver {
 
 
 public:
@@ -41,7 +41,7 @@ public:
 	 * @param options   Options.
      */
 
-	VFdriver(const std::vector<Sample>& samples,
+	Driver(const std::vector<Sample>& samples,
              const size_t order,
              Options options,
 			 std::vector<std::vector<Real>>& weights,
@@ -55,14 +55,14 @@ public:
      * @param options   Options.
      */
 
-	VFdriver(const std::vector<Sample>& samples,
+	Driver(const std::vector<Sample>& samples,
              const std::vector<Complex>& poles,
              Options options,
 			 std::vector<std::vector<Real>>& weights,
 			 const std::pair <size_t, size_t> iterations);
 
 
-	~VFdriver(){
+	~Driver(){
 
 	}
 

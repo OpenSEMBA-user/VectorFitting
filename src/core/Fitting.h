@@ -82,13 +82,19 @@ public:
      *  Getters to fitting coefficents.
      */
     MatrixXcd getA() {return A_;}    // Size:  N, N.
-    MatrixXcd getC() {return C_;}    // Size: Nc, N.
+    MatrixXcd getC() {return C_;}    // Size:  Nc, N.
+    std::vector<MatrixXcd> getR() {return R_;} 	 // Size:  Nc,Nc,N.
     RowVectorXi getB() {return B_;}  // Size:  1, N.
     VectorXcd getD() {return D_;}    // Size:  1, Nc.
     VectorXcd getE() {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
     Real getMaxDeviation() const;
     void setOptions(const Options& options);
+
+    /**
+     * Setters to fitting coefficents.
+     */
+    void setR(std::vector<MatrixXcd> R) {R_ = R;}
 
 private:
     Options options_;
@@ -97,6 +103,7 @@ private:
     VectorXcd poles_;
 
     MatrixXcd A_, C_;
+    std::vector<MatrixXd> R_;
     VectorXcd D_, E_;
     RowVectorXi B_;
 

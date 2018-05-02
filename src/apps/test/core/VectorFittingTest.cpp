@@ -23,7 +23,8 @@
 #include <fstream>
 
 #include "gtest/gtest.h"
-#include "VectorFitting.h"
+
+#include "../../../core/Fitting.h"
 #include "SpaceGenerator.h"
 
 using namespace VectorFitting;
