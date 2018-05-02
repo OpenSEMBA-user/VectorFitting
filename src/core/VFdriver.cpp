@@ -37,15 +37,13 @@ VFdriver::VFdriver(const std::vector<Sample>& samples,
 	Fitting::Fitting fitting1(fSum, poles, options, weightsSum);
 
 	for (size_t i = 0; i < iterations_.first; ++i){ //lines 382-392
-
 		fitting1.fit;
-
 	}
 
 	Fitting::Fitting fitting2(f,poles,options,weights);
 
 	for (size_t i = 0; i < iterations_.second; ++i){ //lines 394-410
-		if(i == iterations_.second-1){
+		if (i == iterations_.second - 1){
 			bool skipResidueIdentification = false;
 			options.setSkipResidueIdentification(skipResidueIdentification);
 		}
@@ -54,6 +52,29 @@ VFdriver::VFdriver(const std::vector<Sample>& samples,
 	}
 
 	std::vector<std::vector<Complex>> fFull = tri2full(f);
+	//set poles and set residues (lines 497-499)
+
+	std::vector<Sample> fit;
+
+	if (!fitting2.getFittedSamples().empty) {
+		fit = fitting2.getFittedSamples();
+
+	} else {
+
+		fit =fitting1.getFittedSamples();
+	}
+
+
+	std::vector<std::vector<Complex>> diff;
+	for (size_t i = 0; i < fit.size; ++i){
+		std::vector<Complex> aux;
+		for (size_t j = 0; j < fit[0].second.size; ++j){
+			aux.push_back(samples[i].second[j]-fit[i].second[j]);
+		}
+
+		diff.push_back(aux);
+
+	}
 
 
 
@@ -72,11 +93,13 @@ std::vector<std::vector<Complex>> VFdriver::squeeze(
 
 	std::vector<std::vector<Complex>> f;
 	for (size_t i = 0; i < Fitting::getSamplesSize; ++i){
+		std::vector<Complex> aux;
 		for (size_t j = 0; j < samples[0].second.size(); ++j){
 			if(j!= 1){
-				f[i].push_back(samples[i].second[j]);
+				aux.push_back(samples[i].second[j]);
 			}
 		}
+		f.push_back(aux);
 	}
 
 
@@ -138,12 +161,14 @@ std::vector<std::vector<Complex>> tri2full(
 
 	std::vector<std::vector<Complex>> fFull;
 	for (size_t i = 0; i < f.size(); ++i){
+		std::vector<Complex> aux;
 		for (size_t j = 0; j < f[0].size(); ++j){
-			fFull[i].push_back(f[i][j]);
+			aux.push_back(f[i][j]);
 			if (j == 1){
-				fFull[i].push_back(f[i][j]);
+				aux.push_back(f[i][j]);
 			}
 		}
+		fFull.push_back(aux);
 	}
 	return fFull;
 }
@@ -165,7 +190,7 @@ void ss2pr() { //assumption: A,B,C are complex
 
 		R.push_back(Rdum);
 	}
-	Fitting::A_.
+
 
 }
 
