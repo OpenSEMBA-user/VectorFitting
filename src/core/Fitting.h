@@ -74,7 +74,7 @@ public:
      * Build a fitter with starting weights provided by Driver::initWeightsSum()
      */
 
-    Fitting(const std::vector<Sample>& samples,
+    Fitting(const Sample& samples,
             const std::vector<Complex>& poles,
             const Options& options,
             const MatrixXd weightsSum);

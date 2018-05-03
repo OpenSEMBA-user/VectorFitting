@@ -72,7 +72,7 @@ public:
 	std::vector<Sample> squeeze(
 		  const std::vector<Sample>& samples);//lines 305-312
 
-	std::vector<Sample> calcFsum(std::vector<Sample> f);//lines 329-347
+	Sample calcFsum(std::vector<Sample> f);//lines 329-347
 
 //	MatrixXd initWeights(std::vector<std::vector<Real>>& weights);//lines 350-380
 
