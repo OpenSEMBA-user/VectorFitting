@@ -602,6 +602,33 @@ void Fitting::fit(){
     }
 }
 
+
+MatrixXd Fitting::initWeights(std::vector<std::vector<Real>>& weights){
+
+	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
+		throw std::runtime_error("Weights and samples must have same size.");
+	}
+	if (weights.size() == 0) {
+		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize,
+				   	   	   	   	   	   	   Fitting::getResponseSize);
+
+	} else {
+		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize,
+										   Fitting::getResponseSize);
+	    for (size_t i = 0; i < Fitting::getSamplesSize; ++i) {
+	    	if (weights[i].size() != Fitting::getResponseSize) {
+	    		throw std::runtime_error(
+	    		 "All weights must have the same size as the samples");
+	        }
+            for (size_t j = 0; j < Fitting::getResponseSize; ++j) {
+                Fitting::weights_(i,j) = weights[i][j];
+            }
+        }
+    }
+
+}
+
+
 /**
  * Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is
  * computed with the model in (2).
@@ -736,6 +763,11 @@ RowVectorXi Fitting::getCIndex(const VectorXcd& poles) {
 
 void Fitting::setOptions(const Options& options) {
     options_ = options;
+}
+
+void Fitting::setR(std::vector<MatrixXcd> R){
+	R_ = R;
+
 }
 
 } /* namespace VectorFitting */

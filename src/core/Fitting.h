@@ -70,16 +70,25 @@ public:
             const Options& options,
             const std::vector<std::vector<Real>>& weight =
                     std::vector<std::vector<Real>>());
+    /**
+     * Build a fitter with starting weights provided by Driver::initWeightsSum()
+     */
+
+    Fitting(const std::vector<Sample>& samples,
+            const std::vector<Complex>& poles,
+            const Options& options,
+            const MatrixXd weightsSum);
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
     void fit();
+    MatrixXd initWeights(std::vector<std::vector<Real>>& weights);
 
     std::vector<Sample>  getFittedSamples() const;
     std::vector<Complex> getPoles();
 
     /**
-     *  Getters to fitting coefficents.
+     *  Getters and setters to fitting coefficents.
      */
     MatrixXcd getA() {return A_;}    // Size:  N, N.
     MatrixXcd getC() {return C_;}    // Size:  Nc, N.
@@ -90,11 +99,8 @@ public:
     Real getRMSE() const;
     Real getMaxDeviation() const;
     void setOptions(const Options& options);
+    void setR(std::vector<MatrixXcd> R);
 
-    /**
-     * Setters to fitting coefficents.
-     */
-    void setR(std::vector<MatrixXcd> R) {R_ = R;}
 
 private:
     Options options_;
@@ -103,7 +109,7 @@ private:
     VectorXcd poles_;
 
     MatrixXcd A_, C_;
-    std::vector<MatrixXd> R_;
+    std::vector<MatrixXcd> R_;
     VectorXcd D_, E_;
     RowVectorXi B_;
 

@@ -66,17 +66,20 @@ public:
 
 	}
 
-	std::vector<std::vector<Complex>> squeeze(
+	MatrixXd initWeightsSUm(std::vector<std::vector<Real>>& weights,
+					  const std::vector<Sample>& samples);
+
+	std::vector<Sample> squeeze(
 		  const std::vector<Sample>& samples);//lines 305-312
 
-	std::vector<Complex> calcFsum(std::vector<std::vector<Complex>> f);//lines 329-347
+	std::vector<Sample> calcFsum(std::vector<Sample> f);//lines 329-347
 
-	MatrixXd initWeights(std::vector<std::vector<Real>>& weights);//lines 350-380
+//	MatrixXd initWeights(std::vector<std::vector<Real>>& weights);//lines 350-380
 
-	std::vector<std::vector<Complex>> tri2full(
-			 	std::vector<std::vector<Complex>> f);
+	std::vector<Sample> tri2full(
+			 	std::vector<Sample> f);
 
-	void ss2pr();
+	void ss2pr(Fitting fitting);
 
 protected:
 
