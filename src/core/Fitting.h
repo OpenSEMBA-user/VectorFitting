@@ -82,6 +82,7 @@ public:
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
     void fit();
+
     MatrixXd initWeights(std::vector<std::vector<Real>>& weights);
 
     std::vector<Sample>  getFittedSamples() const;
@@ -98,9 +99,15 @@ public:
     VectorXcd getE() {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
     Real getMaxDeviation() const;
+	const std::vector<Sample>& getSamples() const;
+
     void setOptions(const Options& options);
     void setR(std::vector<MatrixXcd> R);
-
+	void setA(const MatrixXcd& a);
+	void setC(const MatrixXcd& c);
+	void setD(const VectorXcd& d);
+	void setE(const VectorXcd& e);
+	void setB(const RowVectorXi& b);
 
 private:
     Options options_;

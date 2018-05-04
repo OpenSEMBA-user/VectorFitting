@@ -152,7 +152,8 @@ Fitting::Fitting(const std::vector<Sample>& samples,
 
 }
 
-void Fitting::fit(){
+void Fitting::
+(){
     // Following Gustavssen notation in vectfit3.m .
     const size_t Ns = getSamplesSize();
     const size_t N  = getOrder();
@@ -609,18 +610,18 @@ MatrixXd Fitting::initWeights(std::vector<std::vector<Real>>& weights){
 		throw std::runtime_error("Weights and samples must have same size.");
 	}
 	if (weights.size() == 0) {
-		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize,
-				   	   	   	   	   	   	   Fitting::getResponseSize);
+		Fitting::weights_ = MatrixXd::Ones(getSamplesSize(),
+				   	   	   	   	   	   	   getResponseSize());
 
 	} else {
-		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize,
-										   Fitting::getResponseSize);
-	    for (size_t i = 0; i < Fitting::getSamplesSize; ++i) {
-	    	if (weights[i].size() != Fitting::getResponseSize) {
+		Fitting::weights_ = MatrixXd::Zero(getSamplesSize(),
+										   getResponseSize());
+	    for (size_t i = 0; i < getSamplesSize(); ++i) {
+	    	if (weights[i].size() != getResponseSize()) {
 	    		throw std::runtime_error(
 	    		 "All weights must have the same size as the samples");
 	        }
-            for (size_t j = 0; j < Fitting::getResponseSize; ++j) {
+            for (size_t j = 0; j < getResponseSize(); ++j) {
                 Fitting::weights_(i,j) = weights[i][j];
             }
         }
@@ -772,3 +773,26 @@ void Fitting::setR(std::vector<MatrixXcd> R){
 
 } /* namespace VectorFitting */
 
+const std::vector<Sample>& Fitting::getSamples() const {
+	return samples_;
+}
+
+void Fitting::setA(const MatrixXcd& a) {
+	A_ = a;
+}
+
+void Fitting::setC(const MatrixXcd& c) {
+	C_ = c;
+}
+
+void Fitting::setD(const VectorXcd& d) {
+	D_ = d;
+}
+
+void Fitting::setE(const VectorXcd& e) {
+	E_ = e;
+}
+
+void Fitting::setB(const RowVectorXi& b) {
+	B_ = b;
+}

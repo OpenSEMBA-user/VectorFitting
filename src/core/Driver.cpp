@@ -25,17 +25,18 @@
 namespace VectorFitting {
 
 Driver::Driver(const std::vector<Sample>& samples,
-             const std::vector<Complex>& poles,
-             Options options,
-			 std::vector<std::vector<Real>>& weights,
-			 const std::pair <size_t, size_t> iterations) :
-									iterations_(iterations){
+               const std::vector<Complex>& poles,
+               Options options,
+			   std::vector<std::vector<Real>>& weights,
+			   const std::pair <size_t, size_t> iterations) :
+			   iterations_(iterations){
 
 	MatrixXd weightsSum = Driver::initWeightsSUm(weights,samples);
 	std::vector<Sample> f = Driver::squeeze(samples);
 	Sample fSum = Driver::calcFsum(f);
 
 	Fitting fitting1(fSum, poles, options, weightsSum);
+
 
 	for (size_t i = 0; i < iterations_.first; ++i){ //lines 382-392
 		fitting1.fit();
@@ -53,7 +54,7 @@ Driver::Driver(const std::vector<Sample>& samples,
 		fitting2.fit();
 	}
 
-	std::vector<Sample> fFull = tri2full(f);
+	Fitting fittingFull = tri2full(fitting2);
 	//set poles and set residues (lines 497-499)
 
 	ss2pr(fitting2);
@@ -72,7 +73,7 @@ Driver::Driver(const std::vector<Sample>& samples,
 	std::vector<std::vector<Complex>> diff;
 	for (size_t i = 0; i < fit.size(); ++i){
 		std::vector<Complex> aux;
-		for (size_t j = 0; j < fit[0].second.size(); ++j){
+		for (size_t j = 0; j < fit[i].second.size(); ++j){
 			aux.push_back(samples[i].second[j]-fit[i].second[j]);
 		}
 
@@ -98,7 +99,7 @@ std::vector<Sample> Driver::squeeze(const std::vector<Sample>& samples){
 
 
 	for (size_t i = 0; i < samples.size(); ++i){
-		for (size_t j = 0; j < samples[0].second.size(); ++j){
+		for (size_t j = 0; j < samples[i].second.size(); ++j){
 			assert(samples[1].second[j] == samples[2].second[j]);
 		}
 	}
@@ -107,7 +108,7 @@ std::vector<Sample> Driver::squeeze(const std::vector<Sample>& samples){
 	for (size_t i = 0; i < samples.size(); ++i){
 		Complex aux1 = samples[i].first;
 		std::vector<Complex> aux2;
-		for (size_t j = 0; j < samples[0].second.size(); ++j){
+		for (size_t j = 0; j < samples[i].second.size(); ++j){
 			if(j!= 1){
 				aux2.push_back(samples[i].second[j]);
 			}
@@ -144,51 +145,75 @@ Sample calcFsum(std::vector<Sample> f){
 
 }
 
-//MatrixXd Driver::initWeights(std::vector<std::vector<Real>>& weights){
-//
-//	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
-//		throw std::runtime_error("Weights and samples must have same size.");
-//	}
-//	if (weights.size() == 0) {
-//		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize,
-//				   	   	   	   	   	   	   Fitting::getResponseSize);
-//
-//	} else {
-//		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize,
-//										   Fitting::getResponseSize);
-//	    for (size_t i = 0; i < Fitting::getSamplesSize; ++i) {
-//	    	if (weights[i].size() != Fitting::getResponseSize) {
-//	    		throw std::runtime_error(
-//	    		 "All weights must have the same size as the samples");
-//	        }
-//            for (size_t j = 0; j < Fitting::getResponseSize; ++j) {
-//                Fitting::weights_(i,j) = weights[i][j];
-//            }
-//        }
-//    }
-//	MatrixXd weightsSum = MatrixXd::Ones(Fitting::getSamplesSize,
-//		   	   	   	   	   	   	   	   	 Fitting::getResponseSize);
-//
-//	return weightsSum;
-//}
 
+Fitting tri2full(Fitting fitting){
 
-std::vector<Sample> tri2full(
-			std::vector<Sample> f){
+	MatrixXcd A = fitting.getA();
+	MatrixXcd AA(1,1);
+	MatrixXcd C = fitting.getC();
+	MatrixXcd CC;
+	VectorXcd D = fitting.getD();
+	MatrixXcd DD(1,1);
+	VectorXcd E = fitting.getE();
+	MatrixXcd EE(1,1);
+	RowVectorXi B = fitting.getB();
+	MatrixXi BB(1,1);
 
-	std::vector<Sample> fFull;
-	for (size_t i = 0; i < f.size(); ++i){
-		Complex aux1 = f[i].first;
-		std::vector<Complex> aux2;
-		for (size_t j = 0; j < f[0].second.size(); ++j){
-			aux2.push_back(f[i].second[j]);
-			if (j == 1){
-				aux2.push_back(f[i].second[j]);
+	size_t tell = 0;
+	size_t Nc;
+
+	for (size_t k = 0; k < 10000; ++k){
+		tell += k;
+		if (tell == D.size()){
+			Nc = k;
+			break;
+		}
+	}
+
+	tell = 0;
+	size_t N = A.cols();
+	AA = {};
+	BB = {};
+	CC = MatrixXcd::Zero(Nc,Nc*N);
+	for (size_t i = 0; i < Nc; ++i){
+		DD.conservativeResize(Eigen::NoChange, i+1);
+		EE.conservativeResize(Eigen::NoChange, i+1);
+		AA.topLeftCorner(AA.rows(), AA.cols()) = AA;
+		AA.bottomRightCorner(A.rows(), A.cols()) = A;
+		BB.topLeftCorner(BB.rows(), BB.cols()) = BB;
+		BB.bottomRightCorner(B.rows(), B.cols()) = B;
+		for (size_t j = i; j < Nc; ++j){
+			tell += 1;
+			DD.conservativeResize(j+1,Eigen::NoChange);
+			DD(i, j) = D(tell);
+			EE.conservativeResize(j+1,Eigen::NoChange);
+			EE(i,j) = E(tell);
+			for (size_t k = 0; k < i*N; ++k){
+				for (size_t m = 0; m < C.cols(); ++m){
+					CC(i,(j-1)*N+ k) = C(tell,m);
+				}
+			}
+			for (size_t l = 0; l < j*N; ++l){
+				for (size_t m = 0; m < C.cols(); ++m){
+					CC(i,(i-1)*N + l) = C(tell,m);
+				}
 			}
 		}
-		fFull.push_back(std::make_pair(aux1,aux2));
 	}
-	return fFull;
+
+	DD += DD - DD.eigenvalues().asDiagonal();
+
+//	EE = EE - EE.diagonal() << EE.eigenvalues();
+
+	fitting.setA(AA);
+	fitting.setB(BB);
+	fitting.setC(CC);
+	fitting.setD(DD);
+	fitting.setE(EE);
+
+	return fitting;
+
+
 }
 
 void ss2pr(Fitting fitting) { //assumption: A,B,C are complex

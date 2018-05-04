@@ -22,6 +22,8 @@
 #include "Fitting.h"
 #include "SpaceGenerator.h"
 
+//#include </usr/include/eigen3/Eigen/Dense>
+
 namespace VectorFitting {
 
 using namespace Eigen;
@@ -66,22 +68,16 @@ public:
 
 	}
 
-	MatrixXd initWeightsSUm(std::vector<std::vector<Real>>& weights,
-					  const std::vector<Sample>& samples);
-
-	std::vector<Sample> squeeze(
-		  const std::vector<Sample>& samples);//lines 305-312
-
-	Sample calcFsum(std::vector<Sample> f);//lines 329-347
-
-//	MatrixXd initWeights(std::vector<std::vector<Real>>& weights);//lines 350-380
-
-	std::vector<Sample> tri2full(
-			 	std::vector<Sample> f);
-
-	void ss2pr(Fitting fitting);
 
 protected:
+
+	MatrixXd initWeightsSUm(std::vector<std::vector<Real>>& weights,
+						  const std::vector<Sample>& samples);
+	std::vector<Sample> squeeze(const std::vector<Sample>& samples);//lines 305-312
+	Fitting tri2full(Fitting fitting);
+	Sample calcFsum(std::vector<Sample> f);//lines 329-347
+	void ss2pr(Fitting fitting);
+
 
 	std::pair<size_t, size_t> iterations_;
 
