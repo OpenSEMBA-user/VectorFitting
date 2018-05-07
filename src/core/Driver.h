@@ -78,6 +78,9 @@ protected:
 	MatrixXd initWeightsSum(std::vector<std::vector<Real>>& weights,
 						  const std::vector<Sample>& samples);
 	std::vector<Sample> squeeze(const std::vector<Sample>& samples);
+
+
+
 	void tri2full(Fitting fitting);
 	Sample calcFsum(std::vector<Sample> f);
 	void ss2pr(Fitting fitting);
