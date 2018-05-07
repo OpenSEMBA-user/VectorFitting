@@ -61,14 +61,7 @@ public:
 
 protected:
 
-	MatrixXd initWeightsSum(std::vector<std::vector<Real>>& weights,
-						  const std::vector<Sample>& samples);
 	std::vector<Sample> squeeze(const std::vector<Sample>& samples);
-
-
-
-
-
 	std::pair<size_t, size_t> iterations_;
 	double rmserr_;
 

@@ -85,10 +85,33 @@ void Fitting::init(const std::vector<Sample>& samples,
 
 Fitting::Fitting(const std::vector<Sample>& samples,
         const std::vector<Complex>& poles,
-        const Options& options) {
+        const Options& options,
+		std::vector<std::vector<Real>>& weights) {
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
+
+	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
+		throw std::runtime_error("Weights and samples must have same size.");
+	}
+	if (weights.size() == 0) {
+		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize(),
+				   	   	   	   	   	   	   Fitting::getResponseSize());
+
+	} else {
+		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize(),
+										   Fitting::getResponseSize());
+	    for (size_t i = 0; i < Fitting::getSamplesSize(); ++i) {
+	    	if (weights[i].size() != Fitting::getResponseSize()) {
+	    		throw std::runtime_error(
+	    		 "All weights must have the same size as the samples");
+	        }
+            for (size_t j = 0; j < Fitting::getResponseSize(); ++j) {
+                Fitting::weights_(i,j) = weights[i][j];
+            }
+        }
+    }
+
     init(samples, poles, options);
 }
 
@@ -96,10 +119,32 @@ Fitting::Fitting(const std::vector<Sample>& samples,
 
 Fitting::Fitting(const std::vector<Sample>& samples,
         const size_t order,
-        const Options& options) {
+        const Options& options,
+		std::vector<std::vector<Real>>& weights) {
 
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
+    }
+
+	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
+		throw std::runtime_error("Weights and samples must have same size.");
+	}
+	if (weights.size() == 0) {
+		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize(),
+				   	   	   	   	   	   	   Fitting::getResponseSize());
+
+	} else {
+		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize(),
+										   Fitting::getResponseSize());
+	    for (size_t i = 0; i < Fitting::getSamplesSize(); ++i) {
+	    	if (weights[i].size() != Fitting::getResponseSize()) {
+	    		throw std::runtime_error(
+	    		 "All weights must have the same size as the samples");
+	        }
+            for (size_t j = 0; j < Fitting::getResponseSize(); ++j) {
+                Fitting::weights_(i,j) = weights[i][j];
+            }
+        }
     }
 
     if (options.getPolesType() != Options::PolesType::lincmplx) {
@@ -605,33 +650,6 @@ void Fitting::fit(){
         }
     }
 }
-
-
-void Fitting::initWeights(std::vector<std::vector<Real>>& weights){
-
-	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
-		throw std::runtime_error("Weights and samples must have same size.");
-	}
-	if (weights.size() == 0) {
-		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize(),
-				   	   	   	   	   	   	   Fitting::getResponseSize());
-
-	} else {
-		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize(),
-										   Fitting::getResponseSize());
-	    for (size_t i = 0; i < Fitting::getSamplesSize(); ++i) {
-	    	if (weights[i].size() != Fitting::getResponseSize()) {
-	    		throw std::runtime_error(
-	    		 "All weights must have the same size as the samples");
-	        }
-            for (size_t j = 0; j < Fitting::getResponseSize(); ++j) {
-                Fitting::weights_(i,j) = weights[i][j];
-            }
-        }
-    }
-
-}
-
 
 /**
  * Return the fitted samples: a vector of pairs s <-> f(s), where f(s) is

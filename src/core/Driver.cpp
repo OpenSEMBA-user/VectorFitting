@@ -33,14 +33,14 @@ Driver::Driver(const std::vector<Sample>& samples,
 
     Fitting fitting1({Driver::calcFsum(Driver::squeeze(samples))},
 					 poles,
-					 options);
+					 options,
+					 weights);
 
 	for (size_t i = 0; i < iterations_.first; ++i){ //lines 382-392
 		fitting1.fit();
 	}
 
-	Fitting fitting2(Driver::squeeze(samples), poles, options);
-	fitting2.initWeights(weights);
+	Fitting fitting2(Driver::squeeze(samples), poles, options,weights);
 
 	for (size_t i = 0; i < iterations_.second; ++i){ //lines 394-410
 		if (i == iterations_.second - 1){
@@ -87,14 +87,6 @@ Driver::Driver(const std::vector<Sample>& samples,
 
 };
 
-MatrixXd Driver::initWeightsSum(
-  		 std::vector<std::vector<Real>>& weights,
-		 const std::vector<Sample>& samples){
-
-	MatrixXd weightsSum = MatrixXd::Ones(samples.size(),
-		   	   	   	   	   	   	   	   	 samples[0].second.size());
-	return weightsSum;
-}
 
 std::vector<Sample> Driver::squeeze(const std::vector<Sample>& samples){
 
