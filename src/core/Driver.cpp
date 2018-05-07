@@ -31,19 +31,15 @@ Driver::Driver(const std::vector<Sample>& samples,
 			   const std::pair <size_t, size_t> iterations) :
 			   iterations_(iterations){
 
-	Fitting fitting1(Driver::calcFsum(Driver::squeeze(samples)),
+    Fitting fitting1({Driver::calcFsum(Driver::squeeze(samples))},
 					 poles,
-					 options,
-					 Driver::initWeightsSum(weights,samples));
-
+					 options);
 
 	for (size_t i = 0; i < iterations_.first; ++i){ //lines 382-392
-
 		fitting1.fit();
 	}
 
-	Fitting fitting2(Driver::squeeze(samples),poles,options,weights);
-
+	Fitting fitting2(Driver::squeeze(samples), poles, options);
 	fitting2.initWeights(weights);
 
 	for (size_t i = 0; i < iterations_.second; ++i){ //lines 394-410
@@ -60,15 +56,12 @@ Driver::Driver(const std::vector<Sample>& samples,
 	ss2pr(fitting2);
 
 	std::vector<Sample> fit;
-
 	if (fitting2.getFittedSamples().empty()) {
 		fit = fitting2.getFittedSamples();
 
 	} else {
-
 		fit =fitting1.getFittedSamples();
 	}
-
 
 	std::vector<std::vector<Complex>> diff;
 	for (size_t i = 0; i < fit.size(); ++i){
@@ -76,11 +69,8 @@ Driver::Driver(const std::vector<Sample>& samples,
 		for (size_t j = 0; j < fit[i].second.size(); ++j){
 			aux.push_back(samples[i].second[j]-fit[i].second[j]);
 		}
-
 		diff.push_back(aux);
-
 	}
-
 
 	double sum = 0.0;
 	for (size_t i = 0; i < diff.size(); ++i){
@@ -132,7 +122,7 @@ std::vector<Sample> Driver::squeeze(const std::vector<Sample>& samples){
 }
 
 
-Sample calcFsum(std::vector<Sample> f){
+Sample Driver::calcFsum(const std::vector<Sample>& f){
 
 	Sample fSum;
 	for (size_t i; i < f.size(); ++i){
@@ -152,7 +142,7 @@ Sample calcFsum(std::vector<Sample> f){
 }
 
 
-void tri2full(Fitting fitting){
+void Driver::tri2full(Fitting fitting){
 
 	MatrixXcd A = fitting.getA();
 	MatrixXcd AA(1,1);
@@ -162,7 +152,7 @@ void tri2full(Fitting fitting){
 	MatrixXcd DD(1,1);
 	VectorXcd E = fitting.getE();
 	MatrixXcd EE(1,1);
-	RowVectorXi B = fitting.getB();
+	MatrixXi B = fitting.getB();
 	MatrixXi BB(1,1);
 
 	size_t tell = 0;
@@ -184,10 +174,8 @@ void tri2full(Fitting fitting){
 	for (size_t i = 0; i < Nc; ++i){
 		DD.conservativeResize(Eigen::NoChange, i+1);
 		EE.conservativeResize(Eigen::NoChange, i+1);
-		AA.topLeftCorner(AA.rows(), AA.cols()) = AA;
-		AA.bottomRightCorner(A.rows(), A.cols()) = A;
-		BB.topLeftCorner(BB.rows(), BB.cols()) = BB;
-		BB.bottomRightCorner(B.rows(), B.cols()) = B;
+		AA = blkdiag(AA, A);
+		BB = blkdiag(BB, B);
 		for (size_t j = i; j < Nc; ++j){
 			tell += 1;
 			DD.conservativeResize(j+1,Eigen::NoChange);
@@ -220,20 +208,20 @@ void tri2full(Fitting fitting){
 
 }
 
-void ss2pr(Fitting fitting) { //assumption: A,B,C are complex
+void Driver::ss2pr(Fitting fitting) { //assumption: A,B,C are complex
 
 	size_t Nc = fitting.getC().cols();
 	size_t N = fitting.getA().rows() / Nc;
 	std::vector<MatrixXcd> R;
 	MatrixXcd C = fitting.getC();
-	MatrixXcd B = fitting.getB();
+	MatrixXi B = fitting.getB();
 
 	for (size_t i = 0; i < N; ++i){
 		MatrixXcd Raux = MatrixXcd::Zero(Nc,Nc);
 		for (size_t j = 0; j < Nc; ++j){
 			size_t ind = j*N + i;
 			for (size_t k = 0; k < Nc; ++k){
-				Raux(i,k) += C(k,ind) * B(ind,k);
+			    Raux(i,k) += ((Complex) C(k,ind)) * ((double) B(ind,k));
 			}
 		}
 

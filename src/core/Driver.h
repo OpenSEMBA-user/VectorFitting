@@ -24,27 +24,19 @@
 
 #include <cmath>
 
-//#include </usr/include/eigen3/Eigen/Dense>
-
 namespace VectorFitting {
 
 using namespace Eigen;
 
-
-
 class Driver {
-
-
 public:
-
-	/*
+	/**
 	 * A fitter with starting poles computed automatically will be called
 	 * from VFdriver
 	 * @param samples   Data to be fitted.
 	 * @param order     Order of approximation.
 	 * @param options   Options.
      */
-
 	Driver(const std::vector<Sample>& samples,
              const size_t order,
              Options options,
@@ -58,17 +50,11 @@ public:
      * @param poles     Starting poles.
      * @param options   Options.
      */
-
 	Driver(const std::vector<Sample>& samples,
              const std::vector<Complex>& poles,
              Options options,
 			 std::vector<std::vector<Real>>& weights,
 			 const std::pair <size_t, size_t> iterations);
-
-
-	~Driver(){
-
-	}
 
 	double getRmserr() const;
 	void setRmserr(double rmserr);
@@ -81,16 +67,31 @@ protected:
 
 
 
-	void tri2full(Fitting fitting);
-	Sample calcFsum(std::vector<Sample> f);
-	void ss2pr(Fitting fitting);
 
 
 	std::pair<size_t, size_t> iterations_;
 	double rmserr_;
 
+private:
+	template <class T>
+	static T blkdiag(const T& a, const T& b) {
+	    T res = T::Zero(a.rows() + b.rows(), a.cols() + b.cols());
+	    for (size_t i = 0; i < a.rows(); ++i) {
+	        for (size_t j = 0; j < a.cols(); ++j) {
+	            res(i,j) = a(i,j);
+	        }
+	    }
+	    for (size_t i = a.rows(); i < a.rows() + b.rows(); ++i) {
+	        for (size_t j = a.cols(); j < a.cols() + b.cols(); ++j) {
+	            res(i,j) = b(i,j);
+	        }
+	    }
+	    return res;
+	}
 
-
+	static Sample calcFsum(const std::vector<Sample>& f);
+	static void ss2pr(Fitting fitting);
+	static void tri2full(Fitting fitting);
 };
 
 } /* namespaceVectorFitting */

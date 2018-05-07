@@ -85,18 +85,19 @@ void Fitting::init(const std::vector<Sample>& samples,
 
 Fitting::Fitting(const std::vector<Sample>& samples,
         const std::vector<Complex>& poles,
-        const Options& options,
-        const std::vector<std::vector<Real>>& weights) {
+        const Options& options) {
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
     init(samples, poles, options);
 }
 
+
+
 Fitting::Fitting(const std::vector<Sample>& samples,
         const size_t order,
-        const Options& options,
-        const std::vector<std::vector<Real>>& weights) {
+        const Options& options) {
+
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
@@ -152,8 +153,7 @@ Fitting::Fitting(const std::vector<Sample>& samples,
 
 }
 
-void Fitting::
-(){
+void Fitting::fit(){
     // Following Gustavssen notation in vectfit3.m .
     const size_t Ns = getSamplesSize();
     const size_t N  = getOrder();
@@ -206,7 +206,10 @@ void Fitting::
         Real scale = 0.0;
         for (size_t m = 0; m < Nc; ++m) {
             for (size_t i = 0; i < Ns; ++i) {
-                const Real weight = weights_(i,m);
+                Real weight = 1.0;
+                if (weights_.rows() > 0 && weights_.cols() > 0) {
+                    weight = weights_(i,m);
+                }
                 const Complex sample = samples_[i].second[m];
                 scale += std::pow(std::abs(weight * std::conj(sample)), 2);
             }
@@ -606,26 +609,27 @@ void Fitting::
 
 void Fitting::initWeights(std::vector<std::vector<Real>>& weights){
 
-	if (weights.size() != 0 && weights.size() != samples_.size()) {
+	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
 		throw std::runtime_error("Weights and samples must have same size.");
 	}
 	if (weights.size() == 0) {
-		weights_ = MatrixXd::Ones(getSamplesSize(),getResponseSize());
+		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize(),
+				   	   	   	   	   	   	   Fitting::getResponseSize());
 
 	} else {
-		weights_ = MatrixXd::Zero(getSamplesSize(),getResponseSize());
-	    for (size_t i = 0; i < getSamplesSize(); ++i) {
-	    	if (weights[i].size() != getResponseSize()) {
+		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize(),
+										   Fitting::getResponseSize());
+	    for (size_t i = 0; i < Fitting::getSamplesSize(); ++i) {
+	    	if (weights[i].size() != Fitting::getResponseSize()) {
 	    		throw std::runtime_error(
 	    		 "All weights must have the same size as the samples");
 	        }
-            for (size_t j = 0; j < getResponseSize(); ++j) {
-            	if (j != 1){ /*squeezing weight-matrix*/
-            		weights_(i,j) = weights[i][j];
-            	}
+            for (size_t j = 0; j < Fitting::getResponseSize(); ++j) {
+                Fitting::weights_(i,j) = weights[i][j];
             }
-	    }
+        }
     }
+
 }
 
 
@@ -772,26 +776,3 @@ void Fitting::setR(std::vector<MatrixXcd> R){
 
 } /* namespace VectorFitting */
 
-const std::vector<Sample>& Fitting::getSamples() const {
-	return samples_;
-}
-
-void Fitting::setA(const MatrixXcd& a) {
-	A_ = a;
-}
-
-void Fitting::setC(const MatrixXcd& c) {
-	C_ = c;
-}
-
-void Fitting::setD(const VectorXcd& d) {
-	D_ = d;
-}
-
-void Fitting::setE(const VectorXcd& e) {
-	E_ = e;
-}
-
-void Fitting::setB(const RowVectorXi& b) {
-	B_ = b;
-}

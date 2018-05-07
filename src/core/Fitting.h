@@ -54,9 +54,7 @@ public:
      */
     Fitting(const std::vector<Sample>& samples,
             const size_t order,
-            const Options& options,
-            const std::vector<std::vector<Real>>& weights =
-                    std::vector<std::vector<Real>>());
+            const Options& options);
 
     /**
      * Build a fitter with starting poles provided by the user. order_ and
@@ -67,17 +65,7 @@ public:
      */
     Fitting(const std::vector<Sample>& samples,
             const std::vector<Complex>& poles,
-            const Options& options,
-            const std::vector<std::vector<Real>>& weight =
-                    std::vector<std::vector<Real>>());
-    /**
-     * Build a fitter with starting weights provided by Driver::initWeightsSum()
-     */
-
-    Fitting(const Sample& samples,
-            const std::vector<Complex>& poles,
-            const Options& options,
-            const MatrixXd weightsSum);
+            const Options& options);
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
@@ -94,7 +82,7 @@ public:
     MatrixXcd getA() {return A_;}    // Size:  N, N.
     MatrixXcd getC() {return C_;}    // Size:  Nc, N.
     std::vector<MatrixXcd> getR() {return R_;} 	 // Size:  Nc,Nc,N.
-    RowVectorXi getB() {return B_;}  // Size:  1, N.
+    MatrixXi getB() {return B_;}  // Size:  1, N.
     VectorXcd getD() {return D_;}    // Size:  1, Nc.
     VectorXcd getE() {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
@@ -103,11 +91,11 @@ public:
 
     void setOptions(const Options& options);
     void setR(std::vector<MatrixXcd> R);
-	void setA(const MatrixXcd& a);
-	void setC(const MatrixXcd& c);
-	void setD(const VectorXcd& d);
-	void setE(const VectorXcd& e);
-	void setB(const RowVectorXi& b);
+	void setA(const MatrixXcd& a) {A_ = a;}
+	void setB(const MatrixXi&  b) {B_ = b;}
+	void setC(const MatrixXcd& c) {C_ = c;}
+	void setD(const VectorXcd& d) {D_ = d;}
+	void setE(const VectorXcd& e) {E_ = e;}
 
 private:
     Options options_;
@@ -118,7 +106,7 @@ private:
     MatrixXcd A_, C_;
     std::vector<MatrixXcd> R_;
     VectorXcd D_, E_;
-    RowVectorXi B_;
+    MatrixXi B_;
 
     MatrixXd weights_; // Size: Ns, Nc
 

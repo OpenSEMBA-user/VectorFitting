@@ -451,7 +451,7 @@ TEST_F(VectorFittingTest, ex4a){
     opts.setSkipResidueIdentification(false);
 
     const size_t Niter = 4; // RMS is not reduced after this...
-    Fitting fitting(f, poles, opts, weights);
+    Fitting fitting(f, poles, opts);
     Real rmse = numeric_limits<Real>::max();
     for (size_t iter = 0; iter < Niter; ++iter) {
         fitting.fit();
