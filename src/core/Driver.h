@@ -22,6 +22,8 @@
 #include "Fitting.h"
 #include "SpaceGenerator.h"
 
+#include <cmath>
+
 //#include </usr/include/eigen3/Eigen/Dense>
 
 namespace VectorFitting {
@@ -68,18 +70,21 @@ public:
 
 	}
 
+	double getRmserr() const;
+	void setRmserr(double rmserr);
 
 protected:
 
-	MatrixXd initWeightsSUm(std::vector<std::vector<Real>>& weights,
+	MatrixXd initWeightsSum(std::vector<std::vector<Real>>& weights,
 						  const std::vector<Sample>& samples);
-	std::vector<Sample> squeeze(const std::vector<Sample>& samples);//lines 305-312
-	Fitting tri2full(Fitting fitting);
-	Sample calcFsum(std::vector<Sample> f);//lines 329-347
+	std::vector<Sample> squeeze(const std::vector<Sample>& samples);
+	void tri2full(Fitting fitting);
+	Sample calcFsum(std::vector<Sample> f);
 	void ss2pr(Fitting fitting);
 
 
 	std::pair<size_t, size_t> iterations_;
+	double rmserr_;
 
 
 

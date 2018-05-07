@@ -83,7 +83,7 @@ public:
     // is preferred, it's a good idea to have it as a public method
     void fit();
 
-    MatrixXd initWeights(std::vector<std::vector<Real>>& weights);
+    void initWeights(std::vector<std::vector<Real>>& weights);
 
     std::vector<Sample>  getFittedSamples() const;
     std::vector<Complex> getPoles();

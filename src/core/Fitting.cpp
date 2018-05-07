@@ -604,29 +604,28 @@ void Fitting::
 }
 
 
-MatrixXd Fitting::initWeights(std::vector<std::vector<Real>>& weights){
+void Fitting::initWeights(std::vector<std::vector<Real>>& weights){
 
-	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
+	if (weights.size() != 0 && weights.size() != samples_.size()) {
 		throw std::runtime_error("Weights and samples must have same size.");
 	}
 	if (weights.size() == 0) {
-		Fitting::weights_ = MatrixXd::Ones(getSamplesSize(),
-				   	   	   	   	   	   	   getResponseSize());
+		weights_ = MatrixXd::Ones(getSamplesSize(),getResponseSize());
 
 	} else {
-		Fitting::weights_ = MatrixXd::Zero(getSamplesSize(),
-										   getResponseSize());
+		weights_ = MatrixXd::Zero(getSamplesSize(),getResponseSize());
 	    for (size_t i = 0; i < getSamplesSize(); ++i) {
 	    	if (weights[i].size() != getResponseSize()) {
 	    		throw std::runtime_error(
 	    		 "All weights must have the same size as the samples");
 	        }
             for (size_t j = 0; j < getResponseSize(); ++j) {
-                Fitting::weights_(i,j) = weights[i][j];
+            	if (j != 1){ /*squeezing weight-matrix*/
+            		weights_(i,j) = weights[i][j];
+            	}
             }
-        }
+	    }
     }
-
 }
 
 
