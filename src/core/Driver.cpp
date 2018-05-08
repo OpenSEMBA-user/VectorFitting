@@ -94,7 +94,7 @@ std::vector<Fitting::Sample> Driver::squeeze(
 		std::vector<Complex> aux2;
 		for (size_t j = 0; j < samples[i].second.cols(); ++j){
 			for (size_t k = j; k < samples[i].second.rows(); ++k){
-				aux2.push_back(samples[i].second(j,k));
+				aux2.push_back(samples[i].second(k,j));
 			}
 		}
 		squeezedSample.push_back(std::make_pair(aux1,aux2));
@@ -196,10 +196,10 @@ void Driver::tri2full(Fitting fitting){
 
 }
 
-void Driver::ss2pr(Fitting fitting) { //assumption: A,B,C are complex
+void Driver::ss2pr(Fitting fitting) { //assumption: A & C are complex
 
 	size_t Nc = fitting.getC().cols();
-	size_t N = fitting.getA().rows() / Nc;
+	size_t N = (fitting.getA().rows()) / Nc;
 	std::vector<MatrixXcd> R;
 	MatrixXcd C = fitting.getC();
 	MatrixXi B = fitting.getB();
