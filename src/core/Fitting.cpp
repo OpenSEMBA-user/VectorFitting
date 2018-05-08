@@ -30,7 +30,7 @@ namespace VectorFitting {
 // Custom ordering for the samples, depending on the imaginary parts of the
 // frequencies
 struct {
-    bool operator()(Sample a, Sample b)
+    bool operator()(Fitting::Sample a, Fitting::Sample b)
     {
         return lower(a.first.imag(), b.first.imag());
     }
@@ -86,7 +86,7 @@ void Fitting::init(const std::vector<Sample>& samples,
 Fitting::Fitting(const std::vector<Sample>& samples,
         const std::vector<Complex>& poles,
         const Options& options,
-		std::vector<std::vector<Real>>& weights) {
+		const std::vector<std::vector<Real>>& weights) {
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
     }
@@ -120,7 +120,7 @@ Fitting::Fitting(const std::vector<Sample>& samples,
 Fitting::Fitting(const std::vector<Sample>& samples,
         const size_t order,
         const Options& options,
-		std::vector<std::vector<Real>>& weights) {
+		const std::vector<std::vector<Real>>& weights) {
 
     if (samples.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
@@ -243,7 +243,8 @@ void Fitting::fit(){
         }
         for (size_t i = 0; i < Ns; ++i) {
             Dk(i,N) = (Real) 1.0;
-            if (options_.getAsymptoticTrend() == Options::linear) {
+            if (options_.getAsymptoticTrend() ==
+            		Options::AsymptoticTrend::linear) {
                 Dk(i,N+1) = samples_[i].first;
             }
         }
@@ -266,13 +267,13 @@ void Fitting::fit(){
         if (options_.isRelax()) {
             size_t offs;
             switch (options_.getAsymptoticTrend()) {
-            case Options::zero:
+            case Options::AsymptoticTrend::zero:
                 offs = 0;
                 break;
-            case Options::constant:
+            case Options::AsymptoticTrend::constant:
                 offs = 1;
                 break;
-            case Options::linear:
+            case Options::AsymptoticTrend::linear:
                 offs = 2;
                 break;
             }
@@ -513,13 +514,13 @@ void Fitting::fit(){
             VectorXcd BB = VectorXcd::Zero(2*Ns);
             MatrixXcd A;
             switch (options_.getAsymptoticTrend()) {
-            case Options::zero:
+            case Options::AsymptoticTrend::zero:
                 A = MatrixXcd::Zero(2*Ns, N);
                 break;
-            case Options::constant:
+            case Options::AsymptoticTrend::constant:
                 A = MatrixXcd::Zero(2*Ns, N+1);
                 break;
-            case Options::linear:
+            case Options::AsymptoticTrend::linear:
                 A = MatrixXcd::Zero(2*Ns, N+2);
                 break;
             }
@@ -532,15 +533,15 @@ void Fitting::fit(){
                 }
             }
             switch (options_.getAsymptoticTrend()) {
-            case Options::zero:
+            case Options::AsymptoticTrend::zero:
                 break;
-            case Options::constant:
+            case Options::AsymptoticTrend::constant:
                 for (size_t i = 0; i < Ns; ++i) {
                     A(i,    N) = 1.0 * weights_(i,n);
                     A(i+Ns, N) = 0.0 * weights_(i,n);
                 }
                 break;
-            case Options::linear:
+            case Options::AsymptoticTrend::linear:
                 for (size_t i = 0; i < Ns; ++i) {
                     A(i,    N  ) = 1.0 * weights_(i,n);
                     A(i+Ns, N  ) = 0.0 * weights_(i,n);
@@ -570,12 +571,12 @@ void Fitting::fit(){
                 C(n,i) = X(i);
             }
             switch (options_.getAsymptoticTrend()) {
-            case Options::zero:
+            case Options::AsymptoticTrend::zero:
                 break;
-            case Options::constant:
+            case Options::AsymptoticTrend::constant:
                 SERD(n) = X(N);
                 break;
-            case Options::linear:
+            case Options::AsymptoticTrend::linear:
                 SERD(n) = X(N);
                 SERE(n) = X(N+1);
                 break;
@@ -656,7 +657,7 @@ void Fitting::fit(){
  * computed with the model in (2).
  * @return A std::vector of Samples obtained with the fitted parameters.
  */
-std::vector<Sample> Fitting::getFittedSamples() const {
+std::vector<Fitting::Sample> Fitting::getFittedSamples() const {
     const size_t N  = getOrder();
     const size_t Ns = getSamplesSize();
     const size_t Nc = getResponseSize();
@@ -675,14 +676,14 @@ std::vector<Sample> Fitting::getFittedSamples() const {
     for (size_t n = 0; n < Nc; ++n) {
         fit.block(n,0,1,Ns) = (Dk * C_.block(n,0,1,N).transpose()).transpose();
         switch (options_.getAsymptoticTrend()) {
-        case Options::zero:
+        case Options::AsymptoticTrend::zero:
             break;
-        case Options::constant:
+        case Options::AsymptoticTrend::constant:
             for (size_t i = 0; i < Ns; ++i) {
                 fit(n,i) += D_(n);
             }
             break;
-        case Options::linear:
+        case Options::AsymptoticTrend::linear:
             for (size_t i = 0; i < Ns; ++i) {
                 fit(n,i) += D_(n) + samples_[i].first * E_(n);
             }
@@ -717,7 +718,11 @@ Real Fitting::getRMSE() const {
     // Compute the error between the real responses and the fitted ones
     for (size_t i = 0; i < getSamplesSize(); i++) {
         // Sanity check: the response should be on the *same* frequency
-        assert(samples_[i].first == fittedSamples[i].first);
+        if (!equal(samples_[i].first.real(), fittedSamples[i].first.real()) ||
+      		!equal(samples_[i].first.imag(), fittedSamples[i].first.imag()) ) {
+        	throw std::runtime_error(
+        			"Response should be on the same frequency");
+        }
 
         // Iterate through all the responses in the vector of each sample
         for (size_t j = 0; j < samples_[i].second.size(); j++) {
@@ -755,7 +760,9 @@ size_t Fitting::getSamplesSize() const {
 }
 
 size_t Fitting::getResponseSize() const {
-    assert(samples_.size() > 0);
+    if (samples_.size() == 0) {
+    	throw std::runtime_error("Response size is equal to zero");
+    }
     return samples_.front().second.size();
 }
 

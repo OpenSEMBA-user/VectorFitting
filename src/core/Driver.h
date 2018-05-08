@@ -30,7 +30,7 @@ using namespace Eigen;
 
 class Driver {
 public:
-    typedef std::vector<std::pair<Complex, MatrixXcd>> Sample;
+    typedef std::pair<Complex, MatrixXcd> Sample;
 
 	/**
 	 * A fitter with starting poles computed automatically will be called
@@ -81,10 +81,10 @@ private:
 
 	static std::vector<Fitting::Sample>
 	                squeeze(const std::vector<Sample>& samples);
-	static Sample calcFsum(const std::vector<Sample>& f);
+	static Fitting::Sample calcFsum(const std::vector<Fitting::Sample>& f);
 	static void ss2pr(Fitting fitting);
 	static void tri2full(Fitting fitting);
-    static void init_(
+    void init_(
             const std::vector<Sample>& samples,
             const std::vector<Complex>& poles,
             Options options,
