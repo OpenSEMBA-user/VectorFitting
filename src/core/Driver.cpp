@@ -74,16 +74,15 @@ Driver::Driver(const std::vector<Sample>& samples,
 std::vector<Fitting::Sample> Driver::squeeze(
         const std::vector<Driver::Sample>& samples){
 	for (size_t i = 0; i < samples.size(); ++i){
-		for (size_t j = 0; j < samples[i].second.rows(); ++j){
-			for (size_t k = j; k < samples[i].second.cols(); ++k) {
+		for (size_t j = 0; j < samples[i].second.cols(); ++j){
+			for (size_t k = j; k < samples[i].second.rows(); ++k) {
 				const MatrixXcd& data = samples[i].second;
-				double r1 = ((Complex) data(i,j)).real();
-				double i1 = ((Complex) data(i,j)).imag();
-				double r2 = ((Complex) data(j,i)).real();
-				double i2 = ((Complex) data(j,i)).imag();
-				if (!equal(r1, r2) || !equal(i1, i2)) {
+				if (!equal(((Complex) data(j,k)).real(),
+				           ((Complex) data(k,j)).real()) ||
+					!equal(((Complex) data(j,k)).imag(),
+						   ((Complex) data(k,j)).imag())) {
 					throw std::runtime_error(
-							"Matrices in samples must be symmetric");
+						  "Matrices in samples must be symmetric");
 				}
 			}
 		}
@@ -92,9 +91,13 @@ std::vector<Fitting::Sample> Driver::squeeze(
 	std::vector<Fitting::Sample> squeezedSample;
 	for (size_t i = 0; i < samples.size(); ++i) {
 		Complex aux1 = samples[i].first;
-
-//
-//		squeezedSample.push_back(std::make_pair(aux1,aux2));
+		std::vector<Complex> aux2;
+		for (size_t j = 0; j < samples[i].second.cols(); ++j){
+			for (size_t k = j; k < samples[i].second.rows(); ++k){
+				aux2.push_back(samples[i].second(j,k));
+			}
+		}
+		squeezedSample.push_back(std::make_pair(aux1,aux2));
 	}
 	return squeezedSample;
 }
