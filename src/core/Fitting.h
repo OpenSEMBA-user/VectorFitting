@@ -36,6 +36,8 @@ using namespace Eigen;
 
 typedef std::complex<Real> Complex;
 
+
+class Fitting {
 /**
  * Samples are formed by a pair formed by:
  *  - First, the parameter $s = j \omega$ a purely imaginary number.
@@ -43,7 +45,6 @@ typedef std::complex<Real> Complex;
  */
 typedef std::pair<Complex, std::vector<Complex>> Sample;
 
-class Fitting {
 public:
 
     /**

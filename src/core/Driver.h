@@ -30,6 +30,8 @@ using namespace Eigen;
 
 class Driver {
 public:
+    typedef std::vector<std::pair<Complex, MatrixXcd>> Sample;
+
 	/**
 	 * A fitter with starting poles computed automatically will be called
 	 * from VFdriver
@@ -38,10 +40,10 @@ public:
 	 * @param options   Options.
      */
 	Driver(const std::vector<Sample>& samples,
-             const size_t order,
-             Options options,
-			 std::vector<std::vector<Real>>& weights,
-		     const std::pair <size_t, size_t> iterations);
+           const size_t order,
+           Options options,
+		   const std::vector<std::vector<Real>>& weights,
+		   std::pair<size_t, size_t> iterations);
 
 	/**
 	 * A fitter with starting poles provided by the user will be called
@@ -51,21 +53,16 @@ public:
      * @param options   Options.
      */
 	Driver(const std::vector<Sample>& samples,
-             const std::vector<Complex>& poles,
-             Options options,
-			 std::vector<std::vector<Real>>& weights,
-			 const std::pair <size_t, size_t> iterations);
+           const std::vector<Complex>& poles,
+           Options options,
+		   const std::vector<std::vector<Real>>& weights,
+		   std::pair<size_t, size_t> iterations);
 
-	double getRmserr() const;
-	void setRmserr(double rmserr);
-
-protected:
-
-	std::vector<Sample> squeeze(const std::vector<Sample>& samples);
-	std::pair<size_t, size_t> iterations_;
-	double rmserr_;
+	Fitting getFitting() const;
 
 private:
+	Fitting fitting_;
+
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
 	    T res = T::Zero(a.rows() + b.rows(), a.cols() + b.cols());
@@ -82,9 +79,17 @@ private:
 	    return res;
 	}
 
+	static std::vector<Fitting::Sample>
+	                squeeze(const std::vector<Sample>& samples);
 	static Sample calcFsum(const std::vector<Sample>& f);
 	static void ss2pr(Fitting fitting);
 	static void tri2full(Fitting fitting);
+    static void init_(
+            const std::vector<Sample>& samples,
+            const std::vector<Complex>& poles,
+            Options options,
+            const std::vector<std::vector<Real> >& weights,
+            std::pair<size_t, size_t> iterations);
 };
 
 } /* namespaceVectorFitting */

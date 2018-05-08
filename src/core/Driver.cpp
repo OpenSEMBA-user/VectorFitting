@@ -24,81 +24,62 @@
 
 namespace VectorFitting {
 
+void Driver::init_(
+        const std::vector<Sample>& samples,
+        const std::vector<Complex>& poles,
+        Options options,
+        const std::vector<std::vector<Real> >& weights,
+        const std::pair<size_t, size_t> iterations) {
+    Fitting fitting1(
+            { calcFsum(squeeze(samples)) },
+            poles,
+            options,
+            weights);
+    for (size_t i = 0; i < iterations.first; ++i) {
+        //lines 382-392
+        fitting1.fit();
+    }
+    Fitting fitting2(Driver::squeeze(samples), poles, options, weights);
+    for (size_t i = 0; i < iterations.second; ++i) {
+        //lines 394-410
+        if (i == iterations.second - 1) {
+            bool skipResidueIdentification = false;
+            options.setSkipResidueIdentification(skipResidueIdentification);
+        }
+        fitting2.fit();
+    }
+    tri2full(fitting2);
+    ss2pr(fitting2);
+
+    if (!fitting2.getFittedSamples().empty()) {
+        fitting_ = fitting2;
+    } else {
+        fitting_ = fitting1;
+    }
+}
+
+Fitting Driver::getFitting() const {
+    return fitting_;
+}
+
 Driver::Driver(const std::vector<Sample>& samples,
                const std::vector<Complex>& poles,
                Options options,
-			   std::vector<std::vector<Real>>& weights,
-			   const std::pair <size_t, size_t> iterations) :
-			   iterations_(iterations){
+			   const std::vector<std::vector<Real>>& weights,
+			   std::pair <size_t, size_t> iterations) {
 
-    Fitting fitting1({Driver::calcFsum(Driver::squeeze(samples))},
-					 poles,
-					 options,
-					 weights);
-
-	for (size_t i = 0; i < iterations_.first; ++i){ //lines 382-392
-		fitting1.fit();
-	}
-
-	Fitting fitting2(Driver::squeeze(samples), poles, options,weights);
-
-	for (size_t i = 0; i < iterations_.second; ++i){ //lines 394-410
-		if (i == iterations_.second - 1){
-			bool skipResidueIdentification = false;
-			options.setSkipResidueIdentification(skipResidueIdentification);
-		}
-
-		fitting2.fit();
-	}
-
-	tri2full(fitting2);
-
-	ss2pr(fitting2);
-
-	std::vector<Sample> fit;
-	if (fitting2.getFittedSamples().empty()) {
-		fit = fitting2.getFittedSamples();
-
-	} else {
-		fit =fitting1.getFittedSamples();
-	}
-
-	std::vector<std::vector<Complex>> diff;
-	for (size_t i = 0; i < fit.size(); ++i){
-		std::vector<Complex> aux;
-		for (size_t j = 0; j < fit[i].second.size(); ++j){
-			aux.push_back(samples[i].second[j]-fit[i].second[j]);
-		}
-		diff.push_back(aux);
-	}
-
-	double sum = 0.0;
-	for (size_t i = 0; i < diff.size(); ++i){
-		for (size_t j = 0; j < diff[i].size(); ++j){
-			sum += std::pow(std::abs(diff[i][j]),2);
-		}
-	}
-
-	double rmserr = std::sqrt(sum)/
-					std::sqrt(fit[0].second.size()*fit.size());
-
-	setRmserr(rmserr);
-
-
+    init_(samples, poles, options, weights, iterations);
 };
 
-
-std::vector<Sample> Driver::squeeze(const std::vector<Sample>& samples){
-
-
-
+std::vector<Fitting::Sample> Driver::squeeze(
+        const std::vector<Driver::Sample>& samples){
 	for (size_t i = 0; i < samples.size(); ++i){
 		for (size_t j = 0; j < samples[i].second.size(); ++j){
 			assert(samples[i].second[1] == samples[i].second[2]);
 		}
 	}
 
-	std::vector<Sample> squeezedSample;
+	std::vector<Fitting::Sample> squeezedSample;
 	for (size_t i = 0; i < samples.size(); ++i){
 		Complex aux1 = samples[i].first;
 		std::vector<Complex> aux2;
@@ -114,12 +95,12 @@ std::vector<Sample> Driver::squeeze(const std::vector<Sample>& samples){
 }
 
 
-Sample Driver::calcFsum(const std::vector<Sample>& f){
+Driver::Sample Driver::calcFsum(const std::vector<Sample>& f) {
 
 	Sample fSum;
+	std::vector<Complex> sum(f.size());
 	for (size_t i; i < f.size(); ++i){
 		Complex aux = f[i].first;
-		std::vector<Complex> sum(f.size());
 		for (size_t j; j < f[i].second.size(); ++j){
 			sum[i] += f[i].second[j];
 		}
@@ -129,10 +110,17 @@ Sample Driver::calcFsum(const std::vector<Sample>& f){
 	}
 
 	return fSum;
-
-
 }
 
+Driver::Driver(
+        const std::vector<Sample>& samples,
+        const size_t order,
+        Options options,
+        const std::vector<std::vector<Real> >& weights,
+        std::pair<size_t, size_t> iterations) {
+    Fitting fittingPoles(samples, order, options, weights);
+    init_(samples, fittingPoles.getPoles(), options, weights, iterations);
+}
 
 void Driver::tri2full(Fitting fitting){
 
@@ -216,7 +204,6 @@ void Driver::ss2pr(Fitting fitting) { //assumption: A,B,C are complex
 			    Raux(i,k) += ((Complex) C(k,ind)) * ((double) B(ind,k));
 			}
 		}
-
 		R.push_back(Raux);
 	}
 	fitting.setR(R);
@@ -230,16 +217,6 @@ void Driver::ss2pr(Fitting fitting) { //assumption: A,B,C are complex
 			}
 		}
 	}
-
-
-}
-
-double Driver::getRmserr() const {
-	return rmserr_;
-}
-
-void Driver::setRmserr(double rmserr) {
-	rmserr_ = rmserr;
 }
 
 }/* namespace VectorFitting */

@@ -30,21 +30,21 @@
 using namespace VectorFitting;
 using namespace std;
 
-class VectorFittingTest : public ::testing::Test {
+class FittingTest : public ::testing::Test {
 
 };
 
-TEST_F(VectorFittingTest, ctor) {
+TEST_F(FittingTest, ctor) {
     Options defaultOptions;
-    vector<Sample> noSamples;
+    vector<Fitting::Sample> noSamples;
     EXPECT_THROW(Fitting(noSamples, 3, defaultOptions), runtime_error);
 }
 
 // Test first example of Bjorn Gustavsen's code
-TEST_F(VectorFittingTest, ex1) {
+TEST_F(FittingTest, ex1) {
     // Define samples frequencies
     const size_t nS = 101;
-    vector<Sample> samples(nS);
+    vector<Fitting::Sample> samples(nS);
 
     // Compute distribution of the frequencies
     vector<Real> sImag = logspace(pair<Real,Real>(0.0,4.0), nS);
@@ -121,7 +121,7 @@ TEST_F(VectorFittingTest, ex1) {
     }
 
     // Compare fitted samples.
-    vector<Sample> obtained = fitting.getFittedSamples();
+    vector<Fitting::Sample> obtained = fitting.getFittedSamples();
 
     vector<Complex> gustavssen = {
             Complex(0.524311630961292, -0.192810298822856),
@@ -240,7 +240,7 @@ TEST_F(VectorFittingTest, ex1) {
     EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-10);
 }
 
-TEST_F(VectorFittingTest, ex2){
+TEST_F(FittingTest, ex2){
     // Order of approximation
     const int N = 18;
 
@@ -302,7 +302,7 @@ TEST_F(VectorFittingTest, ex2){
     vector<Complex> s(Ns);
 
     // Samples
-    vector<Sample> samples(Ns);
+    vector<Fitting::Sample> samples(Ns);
 
     // Build samples
     for (size_t k = 0; k < Ns; k++) {
@@ -324,7 +324,7 @@ TEST_F(VectorFittingTest, ex2){
         f[1] += s[k] * 3.0*E; // Misleading in Ex2 of Gustavssen.
 
         // Add pair frequency-response
-        samples[k] = Sample(s[k], f);
+        samples[k] = Fitting::Sample(s[k], f);
     }
 
     // Starting poles
@@ -394,7 +394,7 @@ TEST_F(VectorFittingTest, ex2){
 
 }
 
-TEST_F(VectorFittingTest, ex4a){
+TEST_F(FittingTest, ex4a){
 
     // Reads raw data from file.
     ifstream file("testData/fdne.txt");
@@ -418,7 +418,7 @@ TEST_F(VectorFittingTest, ex4a){
     file.close();
 
     // Prepares samples. Only first column of bigY is used.
-    vector<Sample> f(Ns, Sample(Complex(0.0,0.0), vector<Complex>(Nc)));
+    vector<Fitting::Sample> f(Ns, Fitting::Sample(Complex(0.0,0.0), vector<Complex>(Nc)));
     for (size_t k = 0; k < Ns; ++k) {
         f[k].first = bigY[k].first;
         VectorXcd aux = bigY[k].second.row(0).transpose();
@@ -467,7 +467,7 @@ TEST_F(VectorFittingTest, ex4a){
 }
 
 // Test Gustavsen's 1999 paper example described in section 4
-TEST_F(VectorFittingTest, paperSection4) {
+TEST_F(FittingTest, paperSection4) {
     // Known poles
     vector<Complex> knownPoles;
     knownPoles.push_back(Complex(-  4500,       0));
@@ -516,13 +516,13 @@ TEST_F(VectorFittingTest, paperSection4) {
 
     // Define samples frequencies
     const size_t nS = 100;
-    vector<Sample> samples(nS);
+    vector<Fitting::Sample> samples(nS);
 
     // Compute distribution of the frequencies
     vector<Real> sImag = linspace(pair<Real,Real>(1,1e5), nS);
 
     // Vector to store the fitted samples and loop variable
-    vector<Sample> knownResponses(nS);
+    vector<Fitting::Sample> knownResponses(nS);
 
     for (size_t k = 0; k < nS; k++) {
         // Independent variable s
@@ -541,7 +541,7 @@ TEST_F(VectorFittingTest, paperSection4) {
 
         f[0] += knownD + sk * knownH;
 
-        knownResponses[k] = Sample(sk, f);
+        knownResponses[k] = Fitting::Sample(sk, f);
     }
 
     // Define starting poles

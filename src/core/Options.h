@@ -27,13 +27,13 @@ namespace VectorFitting {
 
 class Options {
 public:
-    enum AsymptoticTrend {
+    enum class AsymptoticTrend {
         zero,
         constant,
         linear
     };
 
-    enum PolesType {
+    enum class PolesType {
     	lincmplx,
 		logcmplx
     };
