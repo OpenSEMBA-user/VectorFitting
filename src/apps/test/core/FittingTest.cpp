@@ -83,7 +83,7 @@ TEST_F(FittingTest, ex1) {
     Options opts;
     opts.setRelax(true);
     opts.setStable(true);
-    opts.setAsymptoticTrend(Options::linear);
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
 
@@ -344,7 +344,7 @@ TEST_F(FittingTest, ex2){
     Options opts;
     opts.setRelax(true);
     opts.setStable(true);
-    opts.setAsymptoticTrend(Options::linear);
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(true);
 
@@ -446,7 +446,7 @@ TEST_F(FittingTest, ex4a){
     Options opts;
     opts.setRelax(true);
     opts.setStable(true);
-    opts.setAsymptoticTrend(Options::linear);
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
 
@@ -569,7 +569,7 @@ TEST_F(FittingTest, paperSection4) {
 
     // Model fitting
     Options opts;
-    opts.setAsymptoticTrend(Options::linear);
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
 
     Fitting fitting(knownResponses, poles, opts);
     fitting.fit();

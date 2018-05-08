@@ -58,7 +58,7 @@ public:
     Fitting(const std::vector<Sample>& samples,
             const size_t order,
             const Options& options,
-			const std::vector<std::vector<Real>>& weights);
+			const std::vector<std::vector<Real>>& weights = {});
 
     /**
      * Build a fitter with starting poles provided by the user. order_ and
@@ -70,7 +70,7 @@ public:
     Fitting(const std::vector<Sample>& samples,
             const std::vector<Complex>& poles,
             const Options& options,
-			const std::vector<std::vector<Real>>& weights);
+			const std::vector<std::vector<Real>>& weights = {});
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method

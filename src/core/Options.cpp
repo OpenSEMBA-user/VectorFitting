@@ -27,8 +27,8 @@ namespace VectorFitting {
 Options::Options() {
     relax_                     = true;
     stable_                    = true;
-    asymptoticTrend_           = constant;
-    polesType_ 				   = lincmplx;
+    asymptoticTrend_           = AsymptoticTrend::constant;
+    polesType_ 				   = PolesType::lincmplx;
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
     complexSpaceState_         = true;

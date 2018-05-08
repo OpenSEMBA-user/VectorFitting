@@ -34,26 +34,32 @@ class DriverTest : public ::testing::Test {};
 
 TEST_F(DriverTest, ctor) {
     Options defaultOptions;
-    vector<Sample> noSamples;
-    EXPECT_THROW(Driver(noSamples, 3, defaultOptions), runtime_error);
+    vector<Driver::Sample> noSamples;
+    std::pair<size_t,size_t> iterations(4,1);
+    EXPECT_THROW(Driver(noSamples, 3, defaultOptions, {}, iterations), runtime_error);
 }
 
 TEST_F(DriverTest, simple_case){
     Options opts;
-    opts.setPolesType(Options::lincmplx);
-    opts.setAsymptoticTrend(Options::linear);
+    opts.setPolesType(Options::PolesType::lincmplx);
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
 
     const size_t Ns = 100;
     const size_t N = 4;
     const std::pair<size_t,size_t> iterations(4,1);
 
-    std::vector<Real> freq = linspace(1,1000, Ns);
-    std::vector<Complex> s;
-    for (size_t i = 0; i < freq.size(); ++i) {
-        s.push_back({0, freq[i]});
+    std::vector<Driver::Sample> samples;
+    {
+        std::vector<Real> freq =
+                linspace(std::make_pair(1.0, 1000.0), Ns);
+        for (size_t i = 0; i < freq.size(); ++i) {
+            Complex s = {0, freq[i]};
+            MatrixXcd data(2,2);
+            data << Complex(1.0, 0.0), Complex(2.0, 0.0),
+                    Complex(2.0, 0.0), Complex(3.0, 0.0);
+            samples.push_back({s, data});
+        }
     }
-
-
 
     Driver driver(samples, N, opts, {}, iterations);
 
