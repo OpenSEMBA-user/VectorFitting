@@ -74,8 +74,8 @@ Driver::Driver(const std::vector<Sample>& samples,
 std::vector<Fitting::Sample> Driver::squeeze(
         const std::vector<Driver::Sample>& samples){
 	for (size_t i = 0; i < samples.size(); ++i){
-		for (size_t j = 0; j < samples[i].second.cols(); ++j){
-			for (size_t k = j; k < samples[i].second.rows(); ++k) {
+		for (auto j = 0; j < samples[i].second.cols(); ++j){
+			for (auto k = j; k < samples[i].second.rows(); ++k) {
 				const MatrixXcd& data = samples[i].second;
 				if (!equal(((Complex) data(j,k)).real(),
 				           ((Complex) data(k,j)).real()) ||
@@ -92,8 +92,8 @@ std::vector<Fitting::Sample> Driver::squeeze(
 	for (size_t i = 0; i < samples.size(); ++i) {
 		Complex aux1 = samples[i].first;
 		std::vector<Complex> aux2;
-		for (size_t j = 0; j < samples[i].second.cols(); ++j){
-			for (size_t k = j; k < samples[i].second.rows(); ++k){
+		for (auto j = 0; j < samples[i].second.cols(); ++j){
+			for (auto k = j; k < samples[i].second.rows(); ++k){
 				aux2.push_back(samples[i].second(k,j));
 			}
 		}
@@ -147,9 +147,9 @@ void Driver::tri2full(Fitting fitting){
 	size_t Nc;
 
 	for (size_t k = 0; k < 10000; ++k){
-		tell += k;
-		if (tell == D.size()){
-			Nc = k;
+		tell += (k+1);
+		if (tell == (size_t) D.size()){
+			Nc = (k+1);
 			break;
 		}
 	}
@@ -165,21 +165,21 @@ void Driver::tri2full(Fitting fitting){
 		AA = blkdiag(AA, A);
 		BB = blkdiag(BB, B);
 		for (size_t j = i; j < Nc; ++j){
-			tell += 1;
 			DD.conservativeResize(j+1,Eigen::NoChange);
-			DD(i, j) = D(tell);
+			DD(i,j) = D(tell);
 			EE.conservativeResize(j+1,Eigen::NoChange);
 			EE(i,j) = E(tell);
 			for (size_t k = 0; k < i*N; ++k){
-				for (size_t m = 0; m < C.cols(); ++m){
+				for (auto m = 0; m < C.cols(); ++m){
 					CC(i,(j-1)*N+ k) = C(tell,m);
 				}
 			}
 			for (size_t l = 0; l < j*N; ++l){
-				for (size_t m = 0; m < C.cols(); ++m){
+				for (auto m = 0; m < C.cols(); ++m){
 					CC(i,(i-1)*N + l) = C(tell,m);
 				}
 			}
+			tell++;
 		}
 	}
 

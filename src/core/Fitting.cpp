@@ -55,19 +55,27 @@ bool isReal(Complex n){
     return equal(n.imag(), 0.0);
 }
 
-void Fitting::init(const std::vector<Sample>& samples,
-                         const std::vector<Complex>& poles,
-                         const Options& options) {
-    options_ = options;
+void Fitting::check() {
+    if (samples_.size() == 0) {
+        throw std::runtime_error("Samples size cannot be zero");
+    }
+
+    if (weights_.size() != 0 && (size_t) weights_.size() != samples_.size()) {
+        throw std::runtime_error("Weights and samples must have same size.");
+    }
+    if (weights_.size() == 0) {
+        weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
+    } else {
+        weights_ = MatrixXd::Zero(getSamplesSize(), getResponseSize());
+    }
 
     // Sanity check: the complex poles should come in pairs; otherwise, there
     // is an error
-    Complex currentPole, conjugate;
-    for (size_t i = 0; i < poles.size(); i++) {
-        currentPole = poles[i];
-
+    Complex currentPole;
+    for (auto i = 0; i < poles_.size(); i++) {
+        currentPole = poles_[i];
         if(!isReal(currentPole)){
-            if (conj(currentPole) == poles[i+1]) {
+            if (conj(currentPole) == poles_[i+1]) {
                 i++;
             } else {
                 throw std::runtime_error(
@@ -75,44 +83,27 @@ void Fitting::init(const std::vector<Sample>& samples,
             }
         }
     }
+}
 
-    samples_ = samples;
-    poles_ = VectorXcd::Zero(poles.size());
+Fitting::Fitting(
+        const std::vector<Sample>& samples,
+        const std::vector<Complex>& poles,
+        const Options& options,
+		const std::vector<std::vector<Real>>& weights) :
+		    options_(options),
+		    samples_(samples) {
+    poles_ = VectorXcd(poles.size());
     for (size_t i = 0; i < poles.size(); ++i) {
         poles_(i) = poles[i];
     }
-}
 
-Fitting::Fitting(const std::vector<Sample>& samples,
-        const std::vector<Complex>& poles,
-        const Options& options,
-		const std::vector<std::vector<Real>>& weights) {
-    if (samples.size() == 0) {
-        throw std::runtime_error("Samples size cannot be zero");
-    }
-
-	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
-		throw std::runtime_error("Weights and samples must have same size.");
-	}
-	if (weights.size() == 0) {
-		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize(),
-				   	   	   	   	   	   	   Fitting::getResponseSize());
-
-	} else {
-		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize(),
-										   Fitting::getResponseSize());
-	    for (size_t i = 0; i < Fitting::getSamplesSize(); ++i) {
-	    	if (weights[i].size() != Fitting::getResponseSize()) {
-	    		throw std::runtime_error(
-	    		 "All weights must have the same size as the samples");
-	        }
-            for (size_t j = 0; j < Fitting::getResponseSize(); ++j) {
-                Fitting::weights_(i,j) = weights[i][j];
-            }
+    weights_ = MatrixXd(weights.size(), getResponseSize());
+    for (size_t i = 0; i < weights.size(); ++i) {
+        for (size_t j = 0; j < weights[i].size(); ++j) {
+            weights_(i,j) = weights[i][j];
         }
     }
-
-    init(samples, poles, options);
+    check();
 }
 
 
@@ -120,30 +111,14 @@ Fitting::Fitting(const std::vector<Sample>& samples,
 Fitting::Fitting(const std::vector<Sample>& samples,
         const size_t order,
         const Options& options,
-		const std::vector<std::vector<Real>>& weights) {
+		const std::vector<std::vector<Real>>& weights) :
+                options_(options),
+                samples_(samples) {
 
-    if (samples.size() == 0) {
-        throw std::runtime_error("Samples size cannot be zero");
-    }
-
-	if (weights.size() != 0 && weights.size() != Fitting::samples_.size()) {
-		throw std::runtime_error("Weights and samples must have same size.");
-	}
-	if (weights.size() == 0) {
-		Fitting::weights_ = MatrixXd::Ones(Fitting::getSamplesSize(),
-				   	   	   	   	   	   	   Fitting::getResponseSize());
-
-	} else {
-		Fitting::weights_ = MatrixXd::Zero(Fitting::getSamplesSize(),
-										   Fitting::getResponseSize());
-	    for (size_t i = 0; i < Fitting::getSamplesSize(); ++i) {
-	    	if (weights[i].size() != Fitting::getResponseSize()) {
-	    		throw std::runtime_error(
-	    		 "All weights must have the same size as the samples");
-	        }
-            for (size_t j = 0; j < Fitting::getResponseSize(); ++j) {
-                Fitting::weights_(i,j) = weights[i][j];
-            }
+    weights_ = MatrixXd(weights.size(), getResponseSize());
+    for (size_t i = 0; i < weights.size(); ++i) {
+        for (size_t j = 0; j < weights[i].size(); ++j) {
+            weights_(i,j) = weights[i][j];
         }
     }
 
@@ -152,8 +127,6 @@ Fitting::Fitting(const std::vector<Sample>& samples,
        	    			   	   	  "poles hasn't been implemented yet");
 
     }
-
-
     // Define starting poles as a vector of complex conjugates -a + bi with
     // the imaginary part linearly distributed over the frequency range of
     // interest; i.e., for each pair of complex conjugates (see eqs 9 and 10):
@@ -169,33 +142,29 @@ Fitting::Fitting(const std::vector<Sample>& samples,
     // distribution covering the range in the samples.
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
-
 	std::vector<Real> imagParts;
     if (options.getPolesType() == Options::PolesType::lincmplx) {
     	imagParts = linspace(range, order/2);
-    // Generate all the starting poles
+    	// Generate all the starting poles
     	std::vector<Complex> poles(order);
-	for (size_t i = 0; i < order; i+=2) {
-        	Real imag = imagParts[i/2];
-        	Real real = - imag / (Real) 100.0;
-        	poles[i] = Complex(real, imag);
-        	poles[i+1] = conj(poles[i]);
-		}
+    	for (size_t i = 0; i < order; i+=2) {
+    	    Real imag = imagParts[i/2];
+    	    Real real = - imag / (Real) 100.0;
+    	    poles[i] = Complex(real, imag);
+    	    poles[i+1] = conj(poles[i]);
+    	}
 
-   	if (order % 2 != 0) {
-    		std::complex<Real> extraPole;
+    	if (order % 2 != 0) {
+    	    std::complex<Real> extraPole;
         	extraPole = -(samples.back().first + samples[0].first)/2.0;
         	poles.push_back(extraPole);
     	}
-
-   	Fitting::init(samples, poles, options);
     } else {
-
-    	throw std::runtime_error("Option for logarithmically distributed initial"
-    			   	   	  "poles hasn't been implemented yet");
+    	throw std::runtime_error(
+    	        "log distributed initial poles hasn't been implemented yet");
     }
 
-
+    Fitting::check();
 }
 
 void Fitting::fit(){

@@ -116,9 +116,7 @@ private:
     static constexpr Real toleranceLow_  = 1e-18;
     static constexpr Real toleranceHigh_ = 1e+18;
 
-    void init(const std::vector<Sample>& samples,
-              const std::vector<Complex>& poles,
-              const Options& options);
+    void check();
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;

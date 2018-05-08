@@ -36,7 +36,8 @@ TEST_F(DriverTest, ctor) {
     Options defaultOptions;
     vector<Driver::Sample> noSamples;
     std::pair<size_t,size_t> iterations(4,1);
-    EXPECT_THROW(Driver(noSamples, 3, defaultOptions, {}, iterations), runtime_error);
+    EXPECT_THROW(Driver(noSamples, 3, defaultOptions, {}, iterations),
+                 runtime_error);
 }
 
 TEST_F(DriverTest, simple_case){
@@ -46,15 +47,16 @@ TEST_F(DriverTest, simple_case){
 
     const size_t Ns = 100;
     const size_t N = 4;
+    const size_t Nc = 2;
     const std::pair<size_t,size_t> iterations(4,1);
 
     std::vector<Driver::Sample> samples;
     {
         std::vector<Real> freq =
-                linspace(std::make_pair(1.0, 1000.0), Ns);
+                linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
         for (size_t i = 0; i < freq.size(); ++i) {
             Complex s = {0, freq[i]};
-            MatrixXcd data(2,2);
+            MatrixXcd data(Nc,Nc);
             data << Complex(1.0, 0.0), Complex(2.0, 0.0),
                     Complex(2.0, 0.0), Complex(3.0, 0.0);
             samples.push_back({s, data});
@@ -62,5 +64,27 @@ TEST_F(DriverTest, simple_case){
     }
 
     Driver driver(samples, N, opts, {}, iterations);
+    Fitting fit = driver.getFitting();
 
+    // Checks sizes of returned fitting parameters.
+    EXPECT_EQ(Nc*N, fit.getA().rows());
+    EXPECT_EQ(Nc*N, fit.getA().cols());
+
+    EXPECT_EQ(Nc*N, fit.getB().rows());
+    EXPECT_EQ(Nc,   fit.getB().cols());
+
+    EXPECT_EQ(Nc,   fit.getC().rows());
+    EXPECT_EQ(Nc*N, fit.getC().cols());
+
+    EXPECT_EQ(Nc,  fit.getE().rows());
+    EXPECT_EQ(Nc, fit.getE().cols());
+
+    EXPECT_EQ(N, fit.getR().size());
+    for (size_t i = 0; i < N; ++i) {
+        EXPECT_EQ(Nc, fit.getR()[i].rows());
+        EXPECT_EQ(Nc, fit.getR()[i].cols());
+    }
+
+    // Checks values of returned parameters.
+    // TODO
 }

@@ -66,13 +66,13 @@ private:
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
 	    T res = T::Zero(a.rows() + b.rows(), a.cols() + b.cols());
-	    for (size_t i = 0; i < a.rows(); ++i) {
-	        for (size_t j = 0; j < a.cols(); ++j) {
+	    for (MatrixXcd::Index i = 0; i < a.rows(); ++i) {
+	        for (MatrixXcd::Index j = 0; j < a.cols(); ++j) {
 	            res(i,j) = a(i,j);
 	        }
 	    }
-	    for (size_t i = a.rows(); i < a.rows() + b.rows(); ++i) {
-	        for (size_t j = a.cols(); j < a.cols() + b.cols(); ++j) {
+	    for (auto i = a.rows(); i < a.rows() + b.rows(); ++i) {
+	        for (auto j = a.cols(); j < a.cols() + b.cols(); ++j) {
 	            res(i,j) = b(i,j);
 	        }
 	    }
