@@ -111,15 +111,11 @@ Driver::Driver(
 void Driver::tri2full(Fitting fitting){
 
 	MatrixXcd A = fitting.getA();
-	MatrixXcd AA(1,1);
-	MatrixXcd C = fitting.getC();
-	MatrixXcd CC;
-	VectorXcd D = fitting.getD();
-	MatrixXcd DD(1,1);
 	VectorXcd E = fitting.getE();
-	MatrixXcd EE(1,1);
 	MatrixXi B = fitting.getB();
-	MatrixXi BB(1,1);
+	MatrixXcd C = fitting.getC();
+	VectorXcd D = fitting.getD();
+	const size_t N = A.cols();
 
 	size_t Nc;
 	{
@@ -133,37 +129,34 @@ void Driver::tri2full(Fitting fitting){
         }
 	}
 
+	MatrixXcd AA;
+	MatrixXi BB;
+	MatrixXcd CC(Nc,Nc*N);
+	MatrixXcd DD(Nc,Nc);
+	MatrixXcd EE(Nc,Nc);
+
 	size_t tell = 0;
-	size_t N = A.cols();
-	AA = {};
-	BB = {};
-	CC = MatrixXcd::Zero(Nc,Nc*N);
 	for (size_t i = 0; i < Nc; ++i){
 		AA = blkdiag(AA, A);
 		BB = blkdiag(BB, B);
 		for (size_t j = i; j < Nc; ++j){
-			DD.conservativeResize(j+1,Eigen::NoChange);
 			DD(i,j) = D(tell);
-			EE.conservativeResize(j+1,Eigen::NoChange);
+			DD(j,i) = D(tell);
 			EE(i,j) = E(tell);
+			EE(j,i) = E(tell);
 			for (size_t k = 0; k < i*N; ++k){
-				for (auto m = 0; m < C.cols(); ++m){
-					CC(i,(j-1)*N+ k) = C(tell,m);
+				for (Index m = 0; m < C.cols(); ++m){
+					CC(i,j*N + k) = C(tell,m);
 				}
 			}
 			for (size_t l = 0; l < j*N; ++l){
-				for (auto m = 0; m < C.cols(); ++m){
-					CC(i,(i-1)*N + l) = C(tell,m);
+				for (Index m = 0; m < C.cols(); ++m){
+					CC(i,i*N + l) = C(tell,m);
 				}
 			}
 			tell++;
 		}
 	}
-
-	MatrixXcd aux1 = DD.eigenvalues().diagonal().transpose();
-	DD += aux1;
-	MatrixXcd aux2 = EE.eigenvalues().diagonal().transpose();
-	EE += aux2;
 
 	fitting.setA(AA);
 	fitting.setB(BB);

@@ -52,14 +52,14 @@ private:
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
 	    T res = T::Zero(a.rows() + b.rows(), a.cols() + b.cols());
-	    for (MatrixXcd::Index i = 0; i < a.rows(); ++i) {
-	        for (MatrixXcd::Index j = 0; j < a.cols(); ++j) {
+	    for (Index i = 0; i < a.rows(); ++i) {
+	        for (Index j = 0; j < a.cols(); ++j) {
 	            res(i,j) = a(i,j);
 	        }
 	    }
-	    for (auto i = a.rows(); i < a.rows() + b.rows(); ++i) {
-	        for (auto j = a.cols(); j < a.cols() + b.cols(); ++j) {
-	            res(i,j) = b(i,j);
+	    for (auto i = 0; i < b.rows(); ++i) {
+	        for (auto j = 0; j < b.cols(); ++j) {
+	            res(i+a.rows(),j+a.cols()) = b(i,j);
 	        }
 	    }
 	    return res;
