@@ -55,7 +55,8 @@ void Fitting::check() {
     }
 }
 
-Fitting::Fitting(const std::vector<Sample>& samples,
+Fitting::Fitting(
+        const std::vector<Sample>& samples,
         const Options& options,
         const std::vector<Complex>& poles,
 		const std::vector<VectorXd>& weights) :
@@ -63,7 +64,7 @@ Fitting::Fitting(const std::vector<Sample>& samples,
                 samples_(samples),
                 poles_(poles),
                 weights_(weights) {
-    std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
+    std::sort(samples_.begin(), samples_.end(), [](Sample a, Sample b) {
         return lower(a.first.imag(), b.first.imag());
     });
     if (poles_.empty()) {
