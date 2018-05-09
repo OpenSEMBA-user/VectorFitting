@@ -85,86 +85,60 @@ void Fitting::check() {
     }
 }
 
-Fitting::Fitting(
-        const std::vector<Sample>& samples,
-        const std::vector<Complex>& poles,
+Fitting::Fitting(const std::vector<Sample>& samples,
         const Options& options,
-		const std::vector<std::vector<Real>>& weights) :
-		    options_(options),
-		    samples_(samples) {
-    poles_ = VectorXcd(poles.size());
-    for (size_t i = 0; i < poles.size(); ++i) {
-        poles_(i) = poles[i];
+        const std::vector<Complex>& poles,
+		const std::vector<VectorXd>& weights) :
+                options_(options),
+                samples_(samples),
+                poles_(poles),
+                weights_(weights) {
+    if (poles_.empty()) {
+        poles_ = buildPoles(getSampleRange(samples), options);
     }
-
-    weights_ = MatrixXd(weights.size(), getResponseSize());
-    for (size_t i = 0; i < weights.size(); ++i) {
-        for (size_t j = 0; j < weights[i].size(); ++j) {
-            weights_(i,j) = weights[i][j];
-        }
-    }
-    check();
+    Fitting::check();
 }
 
+std::pair<Real, Real> Fitting::getSampleRange(
+        const std::vector<Sample>& samples) {
+    Sample minSample =
+            *min_element(samples.begin(), samples.end(), sampleOrdering);
+    Sample maxSample =
+            *max_element(samples.begin(), samples.end(), sampleOrdering);
+    return {minSample.first.imag(), maxSample.first.imag()};
+}
 
-
-Fitting::Fitting(const std::vector<Sample>& samples,
-        const size_t order,
-        const Options& options,
-		const std::vector<std::vector<Real>>& weights) :
-                options_(options),
-                samples_(samples) {
-
-    weights_ = MatrixXd(weights.size(), getResponseSize());
-    for (size_t i = 0; i < weights.size(); ++i) {
-        for (size_t j = 0; j < weights[i].size(); ++j) {
-            weights_(i,j) = weights[i][j];
-        }
-    }
-
-    if (options.getPolesType() != Options::PolesType::lincmplx) {
-       	throw std::runtime_error("Option for logarithmically distributed initial"
-       	    			   	   	  "poles hasn't been implemented yet");
-
-    }
-    // Define starting poles as a vector of complex conjugates -a + bi with
-    // the imaginary part linearly distributed over the frequency range of
-    // interest; i.e., for each pair of complex conjugates (see eqs 9 and 10):
-    //      1. imagParts = linspace(range(samples), number_of_poles)
-    //      2. realParts = imagParts / 100
-
-    // Get range of the samples frequencies:
-    Sample minSample = *min_element(samples.begin(), samples.end(), sampleOrdering);
-    Sample maxSample = *max_element(samples.begin(), samples.end(), sampleOrdering);
-    std::pair<Real, Real> range(minSample.first.imag(), maxSample.first.imag());
+std::vector<Complex> Fitting::buildPoles(
+        const std::pair<Real, Real>& range,
+        const Options& options) {
 
     // Generate the imaginary parts of the initial poles from a linear
     // distribution covering the range in the samples.
     // This can also be done with a logarithmic distribution (sometimes
     // faster convergence -see Userguide, p.8-)
-	std::vector<Real> imagParts;
+    std::vector<Real> imagParts;
     if (options.getPolesType() == Options::PolesType::lincmplx) {
-    	imagParts = linspace(range, order/2);
-    	// Generate all the starting poles
-    	std::vector<Complex> poles(order);
-    	for (size_t i = 0; i < order; i+=2) {
-    	    Real imag = imagParts[i/2];
-    	    Real real = - imag / (Real) 100.0;
-    	    poles[i] = Complex(real, imag);
-    	    poles[i+1] = conj(poles[i]);
-    	}
+        imagParts = linspace(range, options.getN()/2);
+        // Generate all the starting poles
+        std::vector<Complex> poles(options.getN());
+        for (size_t i = 0; i < options.getN(); i+=2) {
+            Real imag = imagParts[i/2];
+            Real real = - imag *  options.getNu();
+            poles[i] = Complex(real, imag);
+            poles[i+1] = conj(poles[i]);
+        }
 
-    	if (order % 2 != 0) {
-    	    std::complex<Real> extraPole;
-        	extraPole = -(samples.back().first + samples[0].first)/2.0;
-        	poles.push_back(extraPole);
-    	}
+        if (options.getN() % 2 != 0) {
+            std::complex<Real> extraPole;
+            extraPole = -(samples.back().first + samples[0].first)/2.0;
+            poles.push_back(extraPole);
+        }
+        return poles;
     } else {
-    	throw std::runtime_error(
-    	        "log distributed initial poles hasn't been implemented yet");
+        throw std::runtime_error(
+                "log distributed initial poles hasn't been implemented yet");
     }
 
-    Fitting::check();
 }
 
 void Fitting::fit(){
@@ -222,8 +196,8 @@ void Fitting::fit(){
         for (size_t m = 0; m < Nc; ++m) {
             for (size_t i = 0; i < Ns; ++i) {
                 Real weight = 1.0;
-                if (weights_.rows() > 0 && weights_.cols() > 0) {
-                    weight = weights_(i,m);
+                if (weights_.size() > 0 && weights_[i].size() > 0) {
+                    weight = weights_[i](m);
                 }
                 const Complex sample = samples_[i].second[m];
                 scale += std::pow(std::abs(weight * std::conj(sample)), 2);
@@ -666,11 +640,7 @@ std::vector<Fitting::Sample> Fitting::getFittedSamples() const {
 }
 
 std::vector<Complex> Fitting::getPoles() {
-    std::vector<Complex> res(poles_.rows());
-    for (int i = 0; i < poles_.rows(); ++i) {
-        res[i] = poles_[i];
-    }
-    return res;
+    return poles_;
 }
 
 /**
@@ -736,7 +706,7 @@ size_t Fitting::getResponseSize() const {
 }
 
 size_t Fitting::getOrder() const {
-    return (size_t) poles_.rows();
+    return (size_t) poles_.size();
 }
 
 RowVectorXi Fitting::getCIndex(const VectorXcd& poles) {

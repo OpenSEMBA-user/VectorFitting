@@ -45,38 +45,34 @@ public:
 	 *  - First, the parameter $s = j \omega$ a purely imaginary number.
 	 *  - Second, a vector with the complex data to be fitted.
 	 */
-	typedef std::pair<Complex, std::vector<Complex>> Sample;
+	typedef std::pair<Complex, VectorXcd> Sample;
 
 	Fitting() {}
 
-    /**
-     * Build a fitter with starting poles computed automatically.
-     * @param samples   Data to be fitted.
-     * @param order     Order of approximation.
-     * @param options   Options.
-     */
-    Fitting(const std::vector<Sample>& samples,
-            const size_t order,
-            const Options& options,
-			const std::vector<std::vector<Real>>& weights = {});
-
-    /**
+	/**
      * Build a fitter with starting poles provided by the user. order_ and
      * poles.size() shall be the same
      * @param samples   Data to be fitted.
-     * @param poles     Starting poles.
      * @param options   Options.
+     * @param poles     Starting poles (optional).
+     * @param weights   Samples weights (optional).
      */
     Fitting(const std::vector<Sample>& samples,
-            const std::vector<Complex>& poles,
             const Options& options,
-			const std::vector<std::vector<Real>>& weights = {});
+            const std::vector<Complex>& poles = {},
+			const std::vector<VectorXd>& weights = {});
+
 
     // This could be called from the constructor, but if an iterative algorithm
     // is preferred, it's a good idea to have it as a public method
     void fit();
 
     std::vector<Sample>  getFittedSamples() const;
+
+    static std::pair<Real, Real> getSampleRange(
+            const std::vector<Sample>& samples);
+    static std::vector<Complex> buildPoles(
+            const std::pair<Real, Real>& range, const Options& opts);
     std::vector<Complex> getPoles();
 
     /**
@@ -85,7 +81,7 @@ public:
     MatrixXcd getA() {return A_;}    // Size:  N, N.
     MatrixXcd getC() {return C_;}    // Size:  Nc, N.
     std::vector<MatrixXcd> getR() {return R_;} 	 // Size:  Nc,Nc,N.
-    MatrixXi getB() {return B_;}  // Size:  1, N.
+    VectorXi getB()  {return B_;}    // Size:  1, N.
     VectorXcd getD() {return D_;}    // Size:  1, Nc.
     VectorXcd getE() {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
@@ -104,14 +100,14 @@ private:
     Options options_;
 
     std::vector<Sample> samples_;
-    VectorXcd poles_;
+    std::vector<Complex> poles_;
 
     MatrixXcd A_, C_;
     std::vector<MatrixXcd> R_;
     VectorXcd D_, E_;
     MatrixXi B_;
 
-    MatrixXd weights_; // Size: Ns, Nc
+    std::vector<VectorXd> weights_; // Size: Ns, Nc
 
     static constexpr Real toleranceLow_  = 1e-18;
     static constexpr Real toleranceHigh_ = 1e+18;

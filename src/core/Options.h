@@ -23,6 +23,9 @@
 #ifndef SEMBA_VECTOR_FITTING_OPTIONS_H_
 #define SEMBA_VECTOR_FITTING_OPTIONS_H_
 
+#include <utility>
+#include <cstddef>
+
 namespace VectorFitting {
 
 class Options {
@@ -38,11 +41,20 @@ public:
 		logcmplx
     };
 
+    enum class Weighting {
+        one,
+        oneOverAbs,
+        oneOverSqrtAbs,
+        oneOverNorm,
+        oneOverSqrtNorm
+    };
+
     Options();
     virtual ~Options();
 
     AsymptoticTrend getAsymptoticTrend() const;
     PolesType getPolesType() const;
+    Weighting getWeighting() const;
     bool isRelax() const;
 
     bool isSkipPoleIdentification() const;
@@ -57,17 +69,29 @@ public:
     void setSkipResidueIdentification(bool skipResidueIdentification);
     void setStable(bool stable);
     void setComplexSpaceState(bool complexSpaceState);
+    std::pair<std::size_t, std::size_t> getIterations() const;
+    void setIterations(const std::pair<std::size_t, std::size_t>& iterations);
+
+    size_t getN() const;
+    void setN(size_t n);
+
+    double getNu() const;
+    void setNu(double nu);
 
 private:
 
     bool relax_;
     bool stable_;
     AsymptoticTrend asymptoticTrend_;
-    PolesType polesType_;
+    Weighting weighting_;
     bool skipPoleIdentification_;
     bool skipResidueIdentification_;
     bool complexSpaceState_;
+    double nu_;
 
+    PolesType polesType_;
+    size_t N_;
+    std::pair<size_t, size_t> iterations_;
 };
 
 } /* namespace VectorFitting */

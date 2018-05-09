@@ -29,6 +29,7 @@ Options::Options() {
     stable_                    = true;
     asymptoticTrend_           = AsymptoticTrend::constant;
     polesType_ 				   = PolesType::lincmplx;
+    weighting_                 = Weighting::one;
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
     complexSpaceState_         = true;
@@ -97,5 +98,34 @@ void VectorFitting::Options::setComplexSpaceState(bool complexSpaceState) {
     complexSpaceState_ = complexSpaceState;
 }
 
+Options::Weighting Options::getWeighting() const {
+    return weighting_;
+}
+
+std::pair<size_t, size_t> Options::getIterations() const {
+    return iterations_;
+}
+
+void Options::setIterations(const std::pair<size_t, size_t>& iterations) {
+    iterations_ = iterations;
+}
+
+size_t Options::getN() const {
+    return N_;
+}
+
+void Options::setN(size_t n) {
+    N_ = n;
+}
+
+double Options::getNu() const {
+    return nu_;
+}
+
+void Options::setNu(double nu) {
+    nu_ = nu;
+}
+
 } /* namespace VectorFitting */
+
 

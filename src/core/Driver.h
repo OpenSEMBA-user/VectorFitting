@@ -40,23 +40,9 @@ public:
 	 * @param options   Options.
      */
 	Driver(const std::vector<Sample>& samples,
-           const size_t order,
-           Options options,
-		   const std::vector<std::vector<Real>>& weights,
-		   std::pair<size_t, size_t> iterations);
-
-	/**
-	 * A fitter with starting poles provided by the user will be called
-	 * from VFdriver. order_ and poles.size() shall be the same
-     * @param samples   Data to be fitted.
-     * @param poles     Starting poles.
-     * @param options   Options.
-     */
-	Driver(const std::vector<Sample>& samples,
-           const std::vector<Complex>& poles,
-           Options options,
-		   const std::vector<std::vector<Real>>& weights,
-		   std::pair<size_t, size_t> iterations);
+           const Options& options,
+           const std::vector<Complex>& poles = {},
+           const std::vector<std::vector<Real>>& weights = {});
 
 	Fitting getFitting() const;
 
@@ -81,7 +67,9 @@ private:
 
 	static std::vector<Fitting::Sample>
 	                squeeze(const std::vector<Sample>& samples);
-	static Fitting::Sample calcFsum(const std::vector<Fitting::Sample>& f);
+	static std::vector<Fitting::Sample> calcFsum(
+	        const std::vector<Fitting::Sample>& f,
+	        const Options& options);
 	static void ss2pr(Fitting fitting);
 	static void tri2full(Fitting fitting);
     void init_(

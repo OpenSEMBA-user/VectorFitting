@@ -27,19 +27,15 @@ namespace VectorFitting {
 void Driver::init_(
         const std::vector<Sample>& samples,
         const std::vector<Complex>& poles,
-        Options options,
-        const std::vector<std::vector<Real> >& weights,
-        const std::pair<size_t, size_t> iterations) {
-    Fitting fitting1(
-            { calcFsum(squeeze(samples)) },
-            poles,
-            options,
-            weights);
+        const Options& options,
+        const std::vector<VectorXd>& weights) {
+    std::pair<size_t,size_t> iterations options.getIterations();
+    Fitting fitting1(calcFsum(squeeze(samples)), options, poles, weights);
     for (size_t i = 0; i < iterations.first; ++i) {
         //lines 382-392
         fitting1.fit();
     }
-    Fitting fitting2(Driver::squeeze(samples), poles, options, weights);
+    Fitting fitting2(squeeze(samples), options, poles, weights);
     for (size_t i = 0; i < iterations.second; ++i) {
         //lines 394-410
         if (i == iterations.second - 1) {
@@ -61,16 +57,7 @@ void Driver::init_(
 Fitting Driver::getFitting() const {
     return fitting_;
 }
-
-Driver::Driver(const std::vector<Sample>& samples,
-               const std::vector<Complex>& poles,
-               Options options,
-			   const std::vector<std::vector<Real>>& weights,
-			   std::pair <size_t, size_t> iterations) {
-
-    init_(samples, poles, options, weights, iterations);
-};
-
+d
 std::vector<Fitting::Sample> Driver::squeeze(
         const std::vector<Driver::Sample>& samples){
 	for (size_t i = 0; i < samples.size(); ++i){
@@ -103,29 +90,34 @@ std::vector<Fitting::Sample> Driver::squeeze(
 }
 
 
-Fitting::Sample Driver::calcFsum(const std::vector<Fitting::Sample>& f) {
+std::vector<Fitting::Sample> Driver::calcFsum(
+        const std::vector<Fitting::Sample>& f,
+        const Options& options) {
+    switch (options.getWeighting()) {
+    case Options::Weighting::one:
+    {
+        std::vector<Fitting::Sample> fSum;
+        for (size_t i; i < f.size(); ++i){
+            std::vector<Complex> sum = {Complex (0,0)};
+            for (size_t j; j < f[i].second.size(); ++j) {
+                sum.front() += f[i].second[j];
+            }
+            fSum.push_back({f[i].first, sum});
+        }
+        return fSum;
+    }
+    default:
+        throw std::runtime_error("Weighting parameter not implemented");
+    }
 
-	Fitting::Sample fSum;
-	std::vector<Complex> sum(f.size());
-	for (size_t i; i < f.size(); ++i){
-		Complex aux = f[i].first;
-		for (size_t j; j < f[i].second.size(); ++j){
-			sum[i] += f[i].second[j];
-		}
 
-		fSum.first = aux;
-		fSum.second = sum;
-	}
-
-	return fSum;
 }
 
 Driver::Driver(
         const std::vector<Sample>& samples,
-        const size_t order,
-        Options options,
-        const std::vector<std::vector<Real> >& weights,
-        std::pair<size_t, size_t> iterations) {
+        const Options& options,
+        const std::vector<Complex>& poles,
+        const std::vector<std::vector<Real> >& weights) {
     Fitting fittingPoles(squeeze(samples), order, options, weights);
     init_(samples, fittingPoles.getPoles(), options, weights, iterations);
 }
@@ -143,18 +135,19 @@ void Driver::tri2full(Fitting fitting){
 	MatrixXi B = fitting.getB();
 	MatrixXi BB(1,1);
 
-	size_t tell = 0;
 	size_t Nc;
-
-	for (size_t k = 0; k < 10000; ++k){
-		tell += (k+1);
-		if (tell == (size_t) D.size()){
-			Nc = (k+1);
-			break;
-		}
+	{
+        size_t tell = 0;
+        for (size_t k = 0; k < 10000; ++k){
+            tell += (k+1);
+            if (tell == (size_t) D.size()){
+                Nc = (k+1);
+                break;
+            }
+        }
 	}
 
-	tell = 0;
+	size_t tell = 0;
 	size_t N = A.cols();
 	AA = {};
 	BB = {};
