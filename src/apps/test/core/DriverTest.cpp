@@ -44,7 +44,7 @@ TEST_F(DriverTest, ctor) {
 
 TEST_F(DriverTest, simple_case){
 
-    const size_t Ns = 100;
+    const size_t Ns = 20;
     const size_t N = 4;
     const size_t Nc = 2;
 

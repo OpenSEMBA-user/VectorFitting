@@ -67,7 +67,7 @@ Fitting::Fitting(
     std::sort(samples_.begin(), samples_.end(), [](Sample a, Sample b) {
         return lower(a.first.imag(), b.first.imag());
     });
-    if (poles_.empty()) {
+    if (poles_.empty() && !samples.empty()) {
         std::pair<Real,Real> range(samples.front().first.imag(),
                                    samples.back().first.imag());
         poles_ = buildPoles(range, options);

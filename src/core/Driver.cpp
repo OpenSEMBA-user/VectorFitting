@@ -50,7 +50,7 @@ std::vector<Fitting::Sample> Driver::calcFsum(
     case Options::Weighting::one:
     {
         std::vector<Fitting::Sample> fSum;
-        for (size_t i; i < f.size(); ++i){
+        for (size_t i = 0; i < f.size(); ++i){
             VectorXcd sum(1,1);
             sum << f[i].second.sum();
             fSum.push_back(std::make_pair(f[i].first, sum));
@@ -75,7 +75,7 @@ Driver::Driver(
     });
 
     std::vector<Complex> poles = inputPoles;
-    if (poles.empty()) {
+    if (poles.empty() && !samples.empty()) {
         std::pair<Real,Real> range(samples.front().first.imag(),
                                    samples.back().first.imag());
         poles = Fitting::buildPoles(range, opts);
@@ -139,8 +139,6 @@ void Driver::tri2full(Fitting fitting){
 	BB = {};
 	CC = MatrixXcd::Zero(Nc,Nc*N);
 	for (size_t i = 0; i < Nc; ++i){
-		DD.conservativeResize(Eigen::NoChange, i+1);
-		EE.conservativeResize(Eigen::NoChange, i+1);
 		AA = blkdiag(AA, A);
 		BB = blkdiag(BB, B);
 		for (size_t j = i; j < Nc; ++j){

@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <complex>
+#include <algorithm>
 #include <eigen3/Eigen/Dense>
 
 #include "Real.h"
@@ -110,7 +111,7 @@ public:
             const std::vector<T>& rhs) {
         Eigen::Matrix<T, Eigen::Dynamic, 1> res(rhs.size());
         for (size_t i = 0; i < rhs.size(); ++i) {
-            res(i) = res[i];
+            res(i) = rhs[i];
         }
         return res;
     }
