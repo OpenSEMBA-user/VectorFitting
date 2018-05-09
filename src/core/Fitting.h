@@ -79,7 +79,6 @@ public:
      */
     MatrixXcd getA() {return A_;}    // Size:  N, N.
     MatrixXcd getC() {return C_;}    // Size:  Nc, N.
-    std::vector<MatrixXcd> getR() {return R_;} 	 // Size:  Nc,Nc,N.
     VectorXi getB()  {return B_;}    // Size:  1, N.
     VectorXcd getD() {return D_;}    // Size:  1, Nc.
     VectorXcd getE() {return E_;}    // Size:  1, Nc.
@@ -89,7 +88,6 @@ public:
 
     Options& options() {return options_;};
 
-    void setR(std::vector<MatrixXcd> r) {R_ = r;}
 	void setA(const MatrixXcd& a) {A_ = a;}
 	void setB(const MatrixXi&  b) {B_ = b;}
 	void setC(const MatrixXcd& c) {C_ = c;}
@@ -123,7 +121,6 @@ private:
     std::vector<Complex> poles_;
 
     MatrixXcd A_, C_;
-    std::vector<MatrixXcd> R_;
     VectorXcd D_, E_;
     MatrixXi B_;
 

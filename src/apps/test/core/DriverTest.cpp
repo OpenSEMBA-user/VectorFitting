@@ -68,25 +68,24 @@ TEST_F(DriverTest, simple_case){
     }
 
     Driver driver(samples, opts);
-    Fitting fit = driver.getFitting();
 
     // Checks sizes of returned fitting parameters.
-    EXPECT_EQ(Nc*N, fit.getA().rows());
-    EXPECT_EQ(Nc*N, fit.getA().cols());
+    EXPECT_EQ(Nc*N, driver.getA().rows());
+    EXPECT_EQ(Nc*N, driver.getA().cols());
 
-    EXPECT_EQ(Nc*N, fit.getB().rows());
-    EXPECT_EQ(Nc,   fit.getB().cols());
+    EXPECT_EQ(Nc*N, driver.getB().rows());
+    EXPECT_EQ(Nc,   driver.getB().cols());
 
-    EXPECT_EQ(Nc,   fit.getC().rows());
-    EXPECT_EQ(Nc*N, fit.getC().cols());
+    EXPECT_EQ(Nc,   driver.getC().rows());
+    EXPECT_EQ(Nc*N, driver.getC().cols());
 
-    EXPECT_EQ(Nc,  fit.getE().rows());
-    EXPECT_EQ(Nc, fit.getE().cols());
+    EXPECT_EQ(Nc, driver.getE().rows());
+    EXPECT_EQ(Nc, driver.getE().cols());
 
-    EXPECT_EQ(N, fit.getR().size());
+    EXPECT_EQ(N, driver.getR().size());
     for (size_t i = 0; i < N; ++i) {
-        EXPECT_EQ(Nc, fit.getR()[i].rows());
-        EXPECT_EQ(Nc, fit.getR()[i].cols());
+        EXPECT_EQ(Nc, driver.getR()[i].rows());
+        EXPECT_EQ(Nc, driver.getR()[i].cols());
     }
 
     // Checks values of returned parameters.

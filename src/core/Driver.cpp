@@ -24,9 +24,6 @@
 
 namespace VectorFitting {
 
-Fitting Driver::getFitting() const {
-    return fitting_;
-}
 
 std::vector<Fitting::Sample> Driver::squeeze(
         const std::vector<Driver::Sample>& samples){
@@ -99,14 +96,16 @@ Driver::Driver(
         fitting2.fit();
     }
     tri2full(fitting2);
-    ss2pr(fitting2);
+    poles_ = ss2pr();
 
     if (!fitting2.getFittedSamples().empty()) {
-        fitting_ = fitting2;
+        samples_ = fitting2.getFittedSamples();
     } else {
-        fitting_ = fitting1;
+        samples_ = fitting1.getFittedSamples();
     }
 }
+
+
 
 void Driver::tri2full(Fitting fitting){
 
@@ -141,9 +140,11 @@ void Driver::tri2full(Fitting fitting){
 		BB = blkdiag(BB, B);
 		for (size_t j = i; j < Nc; ++j){
 			DD(i,j) = D(tell);
-			DD(j,i) = D(tell);
 			EE(i,j) = E(tell);
-			EE(j,i) = E(tell);
+			if (i != j){
+				DD(j,i) = D(tell);
+				E(j,i) = E(tell);
+			}
 			for (size_t k = 0; k < i*N; ++k){
 				for (Index m = 0; m < C.cols(); ++m){
 					CC(i,j*N + k) = C(tell,m);
@@ -158,21 +159,21 @@ void Driver::tri2full(Fitting fitting){
 		}
 	}
 
-	fitting.setA(AA);
-	fitting.setB(BB);
-	fitting.setC(CC);
-	fitting.setD(DD);
-	fitting.setE(EE);
+	A_ = AA;
+	B_ = BB;
+	C_ = CC;
+	D_ = DD;
+	E_ = EE;
 
 }
 
-void Driver::ss2pr(Fitting fitting) { //assumption: A & C are complex
+std::vector<Complex> Driver::ss2pr() { //assumption: A & C are complex
 
-	size_t Nc = fitting.getC().cols();
-	size_t N = (fitting.getA().rows()) / Nc;
+	size_t Nc = C_.cols();
+	size_t N = A_.rows() / Nc;
 	std::vector<MatrixXcd> R;
-	MatrixXcd C = fitting.getC();
-	MatrixXi B = fitting.getB();
+	MatrixXcd C = C_;
+	MatrixXi B = B_;
 
 	for (size_t i = 0; i < N; ++i){
 		MatrixXcd Raux = MatrixXcd::Zero(Nc,Nc);
@@ -184,8 +185,9 @@ void Driver::ss2pr(Fitting fitting) { //assumption: A & C are complex
 		}
 		R.push_back(Raux);
 	}
-	fitting.setR(R);
-	MatrixXcd A = fitting.getA();
+
+	R_ = R;
+	MatrixXcd A = A_;
 	std::vector<Complex> poles;
 
 	for (size_t i = 0; i < N; ++i){
@@ -195,6 +197,34 @@ void Driver::ss2pr(Fitting fitting) { //assumption: A & C are complex
 			}
 		}
 	}
+	return poles;
 }
 
+const MatrixXcd& Driver::getA() const {
+	return A_;
+}
+
+const MatrixXi& Driver::getB() const {
+	return B_;
+}
+
+const MatrixXcd& Driver::getC() const {
+	return C_;
+}
+
+const MatrixXcd& Driver::getD() const {
+	return D_;
+}
+
+const MatrixXcd& Driver::getE() const {
+	return E_;
+}
+
+const std::vector<MatrixXcd>& Driver::getR() const {
+	return R_;
+}
+
+const std::vector<Fitting::Sample>& Driver::getSamples() const {
+	return samples_;
+}
 }/* namespace VectorFitting */

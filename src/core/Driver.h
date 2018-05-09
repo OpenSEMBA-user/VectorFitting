@@ -43,11 +43,24 @@ public:
            const Options& options,
            const std::vector<Complex>& poles = {},
            const std::vector<MatrixXd>& weights = {});
-
-	Fitting getFitting() const;
+	const MatrixXcd& getA() const;
+	const MatrixXi& getB() const;
+	const MatrixXcd& getC() const;
+	const MatrixXcd& getD() const;
+	const MatrixXcd& getE() const;
+	const std::vector<MatrixXcd>& getR() const;
+	const std::vector<Fitting::Sample>& getSamples() const;
 
 private:
-	Fitting fitting_;
+
+	MatrixXcd A_;
+	MatrixXi B_;
+	MatrixXcd C_;
+	MatrixXcd D_;
+	MatrixXcd E_;
+	std::vector<MatrixXcd> R_;
+    std::vector<Fitting::Sample> samples_;
+    std::vector<Complex> poles_;
 
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
@@ -106,8 +119,8 @@ private:
 	static std::vector<Fitting::Sample> calcFsum(
 	        const std::vector<Fitting::Sample>& f,
 	        const Options& options);
-	static void ss2pr(Fitting fitting);
-	static void tri2full(Fitting fitting);
+	std::vector<Complex> ss2pr();
+	void tri2full(Fitting fitting);
 
 };
 
