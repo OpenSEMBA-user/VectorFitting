@@ -90,7 +90,7 @@ private:
     double nu_;
 
     PolesType polesType_;
-    size_t N_;
+    size_t n_;
     std::pair<size_t, size_t> iterations_;
 };
 

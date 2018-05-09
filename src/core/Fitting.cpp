@@ -622,7 +622,6 @@ Real Fitting::getRMSE() const {
 
     // Compute the error between the real responses and the fitted ones
     for (size_t i = 0; i < getSamplesSize(); i++) {
-        // Sanity check: the response should be on the *same* frequency
         if (!equal(samples_[i].first.real(), fittedSamples[i].first.real()) ||
       		!equal(samples_[i].first.imag(), fittedSamples[i].first.imag()) ) {
         	throw std::runtime_error(
@@ -630,7 +629,7 @@ Real Fitting::getRMSE() const {
         }
 
         // Iterate through all the responses in the vector of each sample
-        for (size_t j = 0; j < samples_[i].second.size(); j++) {
+        for (VectorXcd::Index j = 0; j < samples_[i].second.size(); j++) {
             // Retrieve the actual and fitted responses
             actual = samples_[i].second[j];
             fitted = fittedSamples[i].second[j];
@@ -693,15 +692,6 @@ RowVectorXi Fitting::getCIndex(const std::vector<Complex>& poles) {
         }
     }
     return cindex;
-}
-
-void Fitting::setOptions(const Options& options) {
-    options_ = options;
-}
-
-void Fitting::setR(std::vector<MatrixXcd> R){
-	R_ = R;
-
 }
 
 } /* namespace VectorFitting */

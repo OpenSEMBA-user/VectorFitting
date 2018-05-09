@@ -33,6 +33,8 @@ Options::Options() {
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
     complexSpaceState_         = true;
+    n_                         = 0;
+    nu_                        = 1e-3;
 }
 
 Options::~Options() {
@@ -111,11 +113,11 @@ void Options::setIterations(const std::pair<size_t, size_t>& iterations) {
 }
 
 size_t Options::getN() const {
-    return N_;
+    return n_;
 }
 
 void Options::setN(size_t n) {
-    N_ = n;
+    n_ = n;
 }
 
 double Options::getNu() const {

@@ -34,21 +34,25 @@ class DriverTest : public ::testing::Test {};
 
 TEST_F(DriverTest, ctor) {
     Options defaultOptions;
+    defaultOptions.setN(3);
+    defaultOptions.setIterations({4,1});
+
     vector<Driver::Sample> noSamples;
-    std::pair<size_t,size_t> iterations(4,1);
-    EXPECT_THROW(Driver(noSamples, 3, defaultOptions, {}, iterations),
-                 runtime_error);
+
+    EXPECT_THROW(Driver(noSamples, defaultOptions), runtime_error);
 }
 
 TEST_F(DriverTest, simple_case){
-    Options opts;
-    opts.setPolesType(Options::PolesType::lincmplx);
-    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
 
     const size_t Ns = 100;
     const size_t N = 4;
     const size_t Nc = 2;
-    const std::pair<size_t,size_t> iterations(4,1);
+
+    Options opts;
+    opts.setPolesType(Options::PolesType::lincmplx);
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
+    opts.setN(4);
+    opts.setIterations({4, 1});
 
     std::vector<Driver::Sample> samples;
     {
@@ -63,7 +67,7 @@ TEST_F(DriverTest, simple_case){
         }
     }
 
-    Driver driver(samples, N, opts, {}, iterations);
+    Driver driver(samples, opts);
     Fitting fit = driver.getFitting();
 
     // Checks sizes of returned fitting parameters.

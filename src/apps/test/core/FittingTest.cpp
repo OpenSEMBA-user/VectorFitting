@@ -35,9 +35,12 @@ class FittingTest : public ::testing::Test {
 };
 
 TEST_F(FittingTest, ctor) {
-    Options defaultOptions;
     vector<Fitting::Sample> noSamples;
-    EXPECT_THROW(Fitting(noSamples, 3, defaultOptions), runtime_error);
+
+    Options opts;
+    opts.setN(3);
+
+    EXPECT_THROW(Fitting(noSamples, opts), runtime_error);
 }
 
 // Test first example of Bjorn Gustavsen's code
@@ -64,7 +67,7 @@ TEST_F(FittingTest, ex1) {
 
         // Build sample
         samples[k].first = s[k];
-        samples[k].second = f;
+        samples[k].second = Fitting::toEigenVector(f);
     }
 
     // Define starting poles
@@ -87,7 +90,7 @@ TEST_F(FittingTest, ex1) {
     opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
 
-    Fitting fitting(samples, poles, opts);
+    Fitting fitting(samples, opts, poles);
     fitting.fit();
 
     // Compare poles.
@@ -324,7 +327,7 @@ TEST_F(FittingTest, ex2){
         f[1] += s[k] * 3.0*E; // Misleading in Ex2 of Gustavssen.
 
         // Add pair frequency-response
-        samples[k] = Fitting::Sample(s[k], f);
+        samples[k] = Fitting::Sample(s[k], Fitting::toEigenVector(f));
     }
 
     // Starting poles
@@ -349,11 +352,10 @@ TEST_F(FittingTest, ex2){
     opts.setSkipResidueIdentification(true);
 
     const size_t nIter = 3;
-    Fitting fitting(samples, startingPoles, opts);
+    Fitting fitting(samples, opts, startingPoles);
     for (size_t iter = 0; iter < nIter; ++iter) {
         if (iter == nIter-1) {
-            opts.setSkipResidueIdentification(false);
-            fitting.setOptions(opts);
+            fitting.options().setSkipResidueIdentification(false);
         }
         fitting.fit();
     }
@@ -418,13 +420,10 @@ TEST_F(FittingTest, ex4a){
     file.close();
 
     // Prepares samples. Only first column of bigY is used.
-    vector<Fitting::Sample> f(Ns, Fitting::Sample(Complex(0.0,0.0), vector<Complex>(Nc)));
+    vector<Fitting::Sample> f;
     for (size_t k = 0; k < Ns; ++k) {
-        f[k].first = bigY[k].first;
         VectorXcd aux = bigY[k].second.row(0).transpose();
-        for (size_t i = 0; i < Nc; ++i) {
-            f[k].second[i] = aux(i);
-        }
+        f.push_back({bigY[k].first, aux});
     }
 
     // Prepares fitting.
@@ -451,7 +450,7 @@ TEST_F(FittingTest, ex4a){
     opts.setSkipResidueIdentification(false);
 
     const size_t Niter = 4; // RMS is not reduced after this...
-    Fitting fitting(f, poles, opts);
+    Fitting fitting(f, opts, poles);
     Real rmse = numeric_limits<Real>::max();
     for (size_t iter = 0; iter < Niter; ++iter) {
         fitting.fit();
@@ -541,7 +540,8 @@ TEST_F(FittingTest, paperSection4) {
 
         f[0] += knownD + sk * knownH;
 
-        knownResponses[k] = Fitting::Sample(sk, f);
+        VectorXcd aux = Fitting::toEigenVector(f);
+        knownResponses[k] = Fitting::Sample(sk, aux);
     }
 
     // Define starting poles
@@ -571,7 +571,7 @@ TEST_F(FittingTest, paperSection4) {
     Options opts;
     opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
 
-    Fitting fitting(knownResponses, poles, opts);
+    Fitting fitting(knownResponses, opts, poles);
     fitting.fit();
 
     // Error check

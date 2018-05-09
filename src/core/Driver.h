@@ -42,7 +42,7 @@ public:
 	Driver(std::vector<Sample> samples,
            const Options& options,
            const std::vector<Complex>& poles = {},
-           const std::vector<std::vector<Real>>& weights = {});
+           const std::vector<MatrixXd>& weights = {});
 
 	Fitting getFitting() const;
 
@@ -65,19 +65,50 @@ private:
 	    return res;
 	}
 
+
+
 	static std::vector<Fitting::Sample>
 	                squeeze(const std::vector<Sample>& samples);
+
+
+	template <class T>
+	static std::vector<Eigen::Matrix<T,-1,1>> squeeze(
+	        const std::vector<Eigen::Matrix<T,-1,-1>>& rhs) {
+	    for (size_t i = 0; i < rhs.size(); ++i){
+	        for (auto j = 0; j < rhs[i].cols(); ++j){
+	            for (auto k = j; k < rhs[i].rows(); ++k) {
+	                if (!equal(((Complex) rhs[i](j,k)).real(),
+	                        ((Complex) rhs[i](k,j)).real()) ||
+	                        !equal(((Complex) rhs[i](j,k)).imag(),
+	                                ((Complex) rhs[i](k,j)).imag())) {
+	                    throw std::runtime_error(
+	                            "Matrices must be symmetric to be squeezed");
+	                }
+	            }
+	        }
+	    }
+
+	    std::vector<Eigen::Matrix<T,-1,1>> res;
+	    for (size_t i = 0; i < rhs.size(); ++i) {
+	        std::vector<T> aux;
+	        for (auto j = 0; j < rhs[i].cols(); ++j){
+	            for (auto k = j; k < rhs[i].rows(); ++k){
+	                aux.push_back(rhs[i](k,j));
+	            }
+	        }
+	        Eigen::Matrix<T,-1,1> eigAux = Fitting::toEigenVector(aux);;
+	        res.push_back(eigAux);
+	    }
+	    return res;
+	}
+
+
 	static std::vector<Fitting::Sample> calcFsum(
 	        const std::vector<Fitting::Sample>& f,
 	        const Options& options);
 	static void ss2pr(Fitting fitting);
 	static void tri2full(Fitting fitting);
-    void init_(
-            const std::vector<Sample>& samples,
-            const std::vector<Complex>& poles,
-            Options options,
-            const std::vector<std::vector<Real> >& weights,
-            std::pair<size_t, size_t> iterations);
+
 };
 
 } /* namespaceVectorFitting */

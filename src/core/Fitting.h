@@ -86,13 +86,34 @@ public:
     Real getMaxDeviation() const;
 	const std::vector<Sample>& getSamples() const;
 
-    void setOptions(const Options& options);
-    void setR(std::vector<MatrixXcd> R);
+    Options& options() {return options_;};
+
+    void setR(std::vector<MatrixXcd> r) {R_ = r;}
 	void setA(const MatrixXcd& a) {A_ = a;}
 	void setB(const MatrixXi&  b) {B_ = b;}
 	void setC(const MatrixXcd& c) {C_ = c;}
 	void setD(const VectorXcd& d) {D_ = d;}
 	void setE(const VectorXcd& e) {E_ = e;}
+
+    template <class T>
+    static std::vector<T> toStdVector(
+            const Matrix<T, Eigen::Dynamic, 1>& rhs) {
+        std::vector<T> res(rhs.size());
+        for (size_t i = 0; i < res.size(); ++i) {
+            res[i] = rhs(i);
+        }
+        return res;
+    }
+
+    template <class T>
+    static Eigen::Matrix<T, Eigen::Dynamic, 1> toEigenVector(
+            const std::vector<T>& rhs) {
+        Eigen::Matrix<T, Eigen::Dynamic, 1> res(rhs.size());
+        for (size_t i = 0; i < rhs.size(); ++i) {
+            res(i) = res[i];
+        }
+        return res;
+    }
 
 private:
     Options options_;
@@ -136,15 +157,6 @@ private:
         return equal(n.imag(), 0.0);
     }
 
-    template <class T>
-    static std::vector<T> toStdVector(
-            const Matrix<T, Eigen::Dynamic, 1>& rhs) {
-        std::vector<T> res(rhs.size());
-        for (size_t i = 0; i < res.size(); ++i) {
-            res[i] = rhs(i);
-        }
-        return res;
-    }
 };
 
 } /* namespace VectorFitting */

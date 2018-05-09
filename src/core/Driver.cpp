@@ -30,35 +30,18 @@ Fitting Driver::getFitting() const {
 
 std::vector<Fitting::Sample> Driver::squeeze(
         const std::vector<Driver::Sample>& samples){
-	for (size_t i = 0; i < samples.size(); ++i){
-		for (auto j = 0; j < samples[i].second.cols(); ++j){
-			for (auto k = j; k < samples[i].second.rows(); ++k) {
-				const MatrixXcd& data = samples[i].second;
-				if (!equal(((Complex) data(j,k)).real(),
-				           ((Complex) data(k,j)).real()) ||
-					!equal(((Complex) data(j,k)).imag(),
-						   ((Complex) data(k,j)).imag())) {
-					throw std::runtime_error(
-						  "Matrices in samples must be symmetric");
-				}
-			}
-		}
-	}
+    std::vector<MatrixXcd> response;
+    for (size_t i = 0; i < samples.size(); ++i) {
+        response.push_back(samples[i].second);
+    }
+    std::vector<VectorXcd> squeezedResponse = squeeze(response);
 
-	std::vector<Fitting::Sample> squeezedSample;
-	for (size_t i = 0; i < samples.size(); ++i) {
-		Complex aux1 = samples[i].first;
-		std::vector<Complex> aux2;
-		for (auto j = 0; j < samples[i].second.cols(); ++j){
-			for (auto k = j; k < samples[i].second.rows(); ++k){
-				aux2.push_back(samples[i].second(k,j));
-			}
-		}
-		squeezedSample.push_back(std::make_pair(aux1, VectorXcd(aux2.data())));
-	}
-	return squeezedSample;
+    std::vector<Fitting::Sample> res;
+    for (size_t i = 0; i < samples.size(); ++i) {
+        res.push_back(Fitting::Sample(samples[i].first, squeezedResponse[i]));
+    }
+    return res;
 }
-
 
 std::vector<Fitting::Sample> Driver::calcFsum(
         const std::vector<Fitting::Sample>& f,
@@ -83,9 +66,9 @@ std::vector<Fitting::Sample> Driver::calcFsum(
 
 Driver::Driver(
         std::vector<Sample> samples,
-        const Options& options,
+        const Options& opts,
         const std::vector<Complex>& inputPoles,
-        const std::vector<std::vector<Real> >& weights) {
+        const std::vector<MatrixXd>& weights) {
 
     std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
         return lower(a.first.imag(), b.first.imag());
@@ -95,23 +78,23 @@ Driver::Driver(
     if (poles.empty()) {
         std::pair<Real,Real> range(samples.front().first.imag(),
                                    samples.back().first.imag());
-        poles = Fitting::buildPoles(range, options);
+        poles = Fitting::buildPoles(range, opts);
     } else {
         poles = inputPoles;
     }
 
-    std::pair<size_t,size_t> iterations options.getIterations();
-    Fitting fitting1(calcFsum(squeeze(samples)), options, poles, weights);
-    for (size_t i = 0; i < iterations.first; ++i) {
+    std::vector<Fitting::Sample> squeezedSum = calcFsum(squeeze(samples), opts);
+    Fitting fitting1(squeezedSum, opts, poles, squeeze(weights));
+    for (size_t i = 0; i < opts.getIterations().first; ++i) {
         //lines 382-392
         fitting1.fit();
     }
-    Fitting fitting2(squeeze(samples), options, poles, weights);
-    for (size_t i = 0; i < iterations.second; ++i) {
+
+    Fitting fitting2(squeeze(samples), opts, poles, squeeze(weights));
+    for (size_t i = 0; i < opts.getIterations().second; ++i) {
         //lines 394-410
-        if (i == iterations.second - 1) {
-            bool skipResidueIdentification = false;
-            options.setSkipResidueIdentification(skipResidueIdentification);
+        if (i == opts.getIterations().second - 1) {
+            fitting2.options().setSkipResidueIdentification(false);
         }
         fitting2.fit();
     }
