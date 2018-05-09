@@ -24,40 +24,10 @@
 
 namespace VectorFitting {
 
-void Driver::init_(
-        const std::vector<Sample>& samples,
-        const std::vector<Complex>& poles,
-        const Options& options,
-        const std::vector<VectorXd>& weights) {
-    std::pair<size_t,size_t> iterations options.getIterations();
-    Fitting fitting1(calcFsum(squeeze(samples)), options, poles, weights);
-    for (size_t i = 0; i < iterations.first; ++i) {
-        //lines 382-392
-        fitting1.fit();
-    }
-    Fitting fitting2(squeeze(samples), options, poles, weights);
-    for (size_t i = 0; i < iterations.second; ++i) {
-        //lines 394-410
-        if (i == iterations.second - 1) {
-            bool skipResidueIdentification = false;
-            options.setSkipResidueIdentification(skipResidueIdentification);
-        }
-        fitting2.fit();
-    }
-    tri2full(fitting2);
-    ss2pr(fitting2);
-
-    if (!fitting2.getFittedSamples().empty()) {
-        fitting_ = fitting2;
-    } else {
-        fitting_ = fitting1;
-    }
-}
-
 Fitting Driver::getFitting() const {
     return fitting_;
 }
-d
+
 std::vector<Fitting::Sample> Driver::squeeze(
         const std::vector<Driver::Sample>& samples){
 	for (size_t i = 0; i < samples.size(); ++i){
@@ -84,7 +54,7 @@ std::vector<Fitting::Sample> Driver::squeeze(
 				aux2.push_back(samples[i].second(k,j));
 			}
 		}
-		squeezedSample.push_back(std::make_pair(aux1,aux2));
+		squeezedSample.push_back(std::make_pair(aux1, VectorXcd(aux2.data())));
 	}
 	return squeezedSample;
 }
@@ -98,11 +68,9 @@ std::vector<Fitting::Sample> Driver::calcFsum(
     {
         std::vector<Fitting::Sample> fSum;
         for (size_t i; i < f.size(); ++i){
-            std::vector<Complex> sum = {Complex (0,0)};
-            for (size_t j; j < f[i].second.size(); ++j) {
-                sum.front() += f[i].second[j];
-            }
-            fSum.push_back({f[i].first, sum});
+            VectorXcd sum(1,1);
+            sum << f[i].second.sum();
+            fSum.push_back(std::make_pair(f[i].first, sum));
         }
         return fSum;
     }
@@ -114,12 +82,47 @@ std::vector<Fitting::Sample> Driver::calcFsum(
 }
 
 Driver::Driver(
-        const std::vector<Sample>& samples,
+        std::vector<Sample> samples,
         const Options& options,
-        const std::vector<Complex>& poles,
+        const std::vector<Complex>& inputPoles,
         const std::vector<std::vector<Real> >& weights) {
-    Fitting fittingPoles(squeeze(samples), order, options, weights);
-    init_(samples, fittingPoles.getPoles(), options, weights, iterations);
+
+    std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
+        return lower(a.first.imag(), b.first.imag());
+    });
+
+    std::vector<Complex> poles = inputPoles;
+    if (poles.empty()) {
+        std::pair<Real,Real> range(samples.front().first.imag(),
+                                   samples.back().first.imag());
+        poles = Fitting::buildPoles(range, options);
+    } else {
+        poles = inputPoles;
+    }
+
+    std::pair<size_t,size_t> iterations options.getIterations();
+    Fitting fitting1(calcFsum(squeeze(samples)), options, poles, weights);
+    for (size_t i = 0; i < iterations.first; ++i) {
+        //lines 382-392
+        fitting1.fit();
+    }
+    Fitting fitting2(squeeze(samples), options, poles, weights);
+    for (size_t i = 0; i < iterations.second; ++i) {
+        //lines 394-410
+        if (i == iterations.second - 1) {
+            bool skipResidueIdentification = false;
+            options.setSkipResidueIdentification(skipResidueIdentification);
+        }
+        fitting2.fit();
+    }
+    tri2full(fitting2);
+    ss2pr(fitting2);
+
+    if (!fitting2.getFittedSamples().empty()) {
+        fitting_ = fitting2;
+    } else {
+        fitting_ = fitting1;
+    }
 }
 
 void Driver::tri2full(Fitting fitting){

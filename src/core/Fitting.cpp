@@ -27,34 +27,6 @@
 
 namespace VectorFitting {
 
-// Custom ordering for the samples, depending on the imaginary parts of the
-// frequencies
-struct {
-    bool operator()(Fitting::Sample a, Fitting::Sample b)
-    {
-        return lower(a.first.imag(), b.first.imag());
-    }
-} sampleOrdering;
-
-// Complex ordering.
-struct {
-    bool operator()(Complex a, Complex b)
-    {
-        if (lower(a.real(), b.real())) {
-            return true;
-        }
-        if (equal(a.real(), b.real())) {
-            return lower(a.imag(), b.imag());
-        }
-        return false;
-    }
-} complexOrdering;
-
-// Quick check to see if a Complex number is real
-bool isReal(Complex n){
-    return equal(n.imag(), 0.0);
-}
-
 void Fitting::check() {
     if (samples_.size() == 0) {
         throw std::runtime_error("Samples size cannot be zero");
@@ -63,16 +35,14 @@ void Fitting::check() {
     if (weights_.size() != 0 && (size_t) weights_.size() != samples_.size()) {
         throw std::runtime_error("Weights and samples must have same size.");
     }
-    if (weights_.size() == 0) {
-        weights_ = MatrixXd::Ones(getSamplesSize(), getResponseSize());
-    } else {
-        weights_ = MatrixXd::Zero(getSamplesSize(), getResponseSize());
+    if (weights_.empty()) {
+        weights_ = std::vector<VectorXd>(
+                getSamplesSize(), VectorXd::Ones(getResponseSize()));
     }
-
     // Sanity check: the complex poles should come in pairs; otherwise, there
     // is an error
     Complex currentPole;
-    for (auto i = 0; i < poles_.size(); i++) {
+    for (size_t i = 0; i < poles_.size(); i++) {
         currentPole = poles_[i];
         if(!isReal(currentPole)){
             if (conj(currentPole) == poles_[i+1]) {
@@ -93,19 +63,15 @@ Fitting::Fitting(const std::vector<Sample>& samples,
                 samples_(samples),
                 poles_(poles),
                 weights_(weights) {
+    std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
+        return lower(a.first.imag(), b.first.imag());
+    });
     if (poles_.empty()) {
-        poles_ = buildPoles(getSampleRange(samples), options);
+        std::pair<Real,Real> range(samples.front().first.imag(),
+                                   samples.back().first.imag());
+        poles_ = buildPoles(range, options);
     }
     Fitting::check();
-}
-
-std::pair<Real, Real> Fitting::getSampleRange(
-        const std::vector<Sample>& samples) {
-    Sample minSample =
-            *min_element(samples.begin(), samples.end(), sampleOrdering);
-    Sample maxSample =
-            *max_element(samples.begin(), samples.end(), sampleOrdering);
-    return {minSample.first.imag(), maxSample.first.imag()};
 }
 
 std::vector<Complex> Fitting::buildPoles(
@@ -130,7 +96,7 @@ std::vector<Complex> Fitting::buildPoles(
 
         if (options.getN() % 2 != 0) {
             std::complex<Real> extraPole;
-            extraPole = -(samples.back().first + samples[0].first)/2.0;
+            extraPole = -(range.first + range.second)/2.0;
             poles.push_back(extraPole);
         }
         return poles;
@@ -228,7 +194,7 @@ void Fitting::fit(){
                 MatrixXd A = MatrixXd::Zero(2*Ns+1, (N+offs)+N+1);
                 VectorXd weig(Ns);
                 for (size_t i = 0; i < Ns; ++i) {
-                    weig(i) = weights_(i,n);
+                    weig(i) = weights_[i](n);
                 }
                 // Left block.
                 for (size_t m = 0; m < N + offs; ++m) {
@@ -433,8 +399,8 @@ void Fitting::fit(){
     if (!options_.isSkipResidueIdentification()) {
         // We now calculate SER for f, using the modified zeros of sigma
         // as new poles.
-        VectorXcd LAMBD = roetter;
-        RowVectorXi cindex = getCIndex(LAMBD);
+        const VectorXcd& LAMBD = roetter;
+        RowVectorXi cindex = getCIndex(toStdVector(LAMBD));
 
         // We now calculate the SER for f (new fitting), using the above
         // calculated zeros as known poles.
@@ -469,10 +435,10 @@ void Fitting::fit(){
             }
             for (size_t i = 0; i < Ns; ++i) {
                 for (size_t j = 0; j < N; ++j) {
-                    A (i    ,j) =   std::real(Dk(i,j)) * weights_(i,n);
-                    A (i+Ns ,j) =   std::imag(Dk(i,j)) * weights_(i,n);
-                    BB(i)    = std::real(samples_[i].second[n]) * weights_(i,n);
-                    BB(i+Ns) = std::imag(samples_[i].second[n]) * weights_(i,n);
+                    A (i    ,j) =   std::real(Dk(i,j)) * weights_[i](n);
+                    A (i+Ns ,j) =   std::imag(Dk(i,j)) * weights_[i](n);
+                    BB(i)    = std::real(samples_[i].second(n)) * weights_[i](n);
+                    BB(i+Ns) = std::imag(samples_[i].second(n)) * weights_[i](n);
                 }
             }
             switch (options_.getAsymptoticTrend()) {
@@ -480,16 +446,16 @@ void Fitting::fit(){
                 break;
             case Options::AsymptoticTrend::constant:
                 for (size_t i = 0; i < Ns; ++i) {
-                    A(i,    N) = 1.0 * weights_(i,n);
-                    A(i+Ns, N) = 0.0 * weights_(i,n);
+                    A(i,    N) = 1.0 * weights_[i](n);
+                    A(i+Ns, N) = 0.0 * weights_[i](n);
                 }
                 break;
             case Options::AsymptoticTrend::linear:
                 for (size_t i = 0; i < Ns; ++i) {
-                    A(i,    N  ) = 1.0 * weights_(i,n);
-                    A(i+Ns, N  ) = 0.0 * weights_(i,n);
-                    A(i,    N+1) = std::real(samples_[i].first) * weights_(i,n);
-                    A(i+Ns, N+1) = std::imag(samples_[i].first) * weights_(i,n);
+                    A(i,    N  ) = 1.0 * weights_[i](n);
+                    A(i+Ns, N  ) = 0.0 * weights_[i](n);
+                    A(i,    N+1) = std::real(samples_[i].first) * weights_[i](n);
+                    A(i+Ns, N+1) = std::imag(samples_[i].first) * weights_[i](n);
                 }
                 break;
             }
@@ -548,8 +514,8 @@ void Fitting::fit(){
     A_ = MatrixXcd::Zero(N,N);
     for (size_t i = 0; i < N; ++i) {
         A_(i,i) = SERA(i);
+        poles_[i] = SERA(i);
     }
-    poles_ = SERA.transpose();
     if (!options_.isSkipResidueIdentification()) {
         B_ = SERB;
         C_ = SERC;
@@ -608,12 +574,12 @@ std::vector<Fitting::Sample> Fitting::getFittedSamples() const {
     MatrixXcd Dk = MatrixXcd::Zero(Ns,N);
     for (size_t m = 0; m < N; ++m) {
         for (size_t i = 0; i < Ns; ++i) {
-            Dk(i,m) = Complex(1.0, 0) / (samples_[i].first - poles_(m));
+            Dk(i,m) = Complex(1.0, 0) / (samples_[i].first - poles_[m]);
         }
     }
 
     std::vector<Sample> res(
-            Ns, Sample(Complex(0.0,0.0), std::vector<Complex>(Nc)));
+            Ns, Sample(Complex(0.0,0.0), VectorXcd(Nc)));
     MatrixXcd fit = MatrixXcd::Zero(Nc,Ns);
 
     for (size_t n = 0; n < Nc; ++n) {
@@ -709,11 +675,11 @@ size_t Fitting::getOrder() const {
     return (size_t) poles_.size();
 }
 
-RowVectorXi Fitting::getCIndex(const VectorXcd& poles) {
-    const size_t N = poles.rows();
+RowVectorXi Fitting::getCIndex(const std::vector<Complex>& poles) {
+    const size_t N = poles.size();
     RowVectorXi cindex = RowVectorXi::Zero(N);
     for (size_t m = 0; m < N; ++m) {
-        if (!equal(std::imag(poles(m)), 0.0)) {
+        if (!equal(std::imag(poles[m]), 0.0)) {
             if (m == 0) {
                 cindex(m) = 1;
             } else {

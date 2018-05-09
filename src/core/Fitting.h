@@ -69,8 +69,6 @@ public:
 
     std::vector<Sample>  getFittedSamples() const;
 
-    static std::pair<Real, Real> getSampleRange(
-            const std::vector<Sample>& samples);
     static std::vector<Complex> buildPoles(
             const std::pair<Real, Real>& range, const Options& opts);
     std::vector<Complex> getPoles();
@@ -118,7 +116,35 @@ private:
     size_t getResponseSize() const;
     size_t getOrder() const;
 
-    static RowVectorXi getCIndex(const VectorXcd& poles);
+    static RowVectorXi getCIndex(const std::vector<Complex>& poles);
+
+    struct {
+        bool operator()(Complex a, Complex b)
+        {
+            if (lower(a.real(), b.real())) {
+                return true;
+            }
+            if (equal(a.real(), b.real())) {
+                return lower(a.imag(), b.imag());
+            }
+            return false;
+        }
+    } complexOrdering;
+
+    // Quick check to see if a Complex number is real
+    bool isReal(Complex n){
+        return equal(n.imag(), 0.0);
+    }
+
+    template <class T>
+    static std::vector<T> toStdVector(
+            const Matrix<T, Eigen::Dynamic, 1>& rhs) {
+        std::vector<T> res(rhs.size());
+        for (size_t i = 0; i < res.size(); ++i) {
+            res[i] = rhs(i);
+        }
+        return res;
+    }
 };
 
 } /* namespace VectorFitting */

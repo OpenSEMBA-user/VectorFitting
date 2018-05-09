@@ -39,7 +39,7 @@ public:
 	 * @param order     Order of approximation.
 	 * @param options   Options.
      */
-	Driver(const std::vector<Sample>& samples,
+	Driver(std::vector<Sample> samples,
            const Options& options,
            const std::vector<Complex>& poles = {},
            const std::vector<std::vector<Real>>& weights = {});
