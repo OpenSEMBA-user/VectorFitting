@@ -169,23 +169,29 @@ void Driver::tri2full(Fitting fitting){
 
 std::vector<Complex> Driver::ss2pr() { //assumption: A & C are complex
 
-	size_t Nc = C_.cols();
-	size_t N = A_.rows() / Nc;
+	size_t Nr = C_.rows();
+	size_t N = A_.rows() / Nr;
 	std::vector<MatrixXcd> R;
 	MatrixXcd C = C_;
 	MatrixXi B = B_;
 
+
 	for (size_t i = 0; i < N; ++i){
-		MatrixXcd Raux = MatrixXcd::Zero(Nc,Nc);
-		for (size_t j = 0; j < Nc; ++j){
+		MatrixXcd Raux = MatrixXcd::Zero(Nr,Nr);
+		std::vector<Complex> aux(N);
+		for (size_t j = 0; j < Nr; ++j){
 			size_t ind = j*N + i;
-			for (size_t k = 0; k < Nc; ++k){
-			    Raux(i,k) += ((Complex) C(k,ind)) * ((double) B(ind,k));
+
+			for (size_t k = 0; k < Nr; ++k){
+				aux[i] += ((Complex) C(k,ind)) * ((double) B(ind,k));
 			}
 		}
+		Raux(0,0) = aux[0];
+		Raux(0,1) = aux[1];
+		Raux(1,0) = aux[2];
+		Raux(1,1) = aux[3];
 		R.push_back(Raux);
-	}
-
+ 	}
 	R_ = R;
 	MatrixXcd A = A_;
 	std::vector<Complex> poles;
