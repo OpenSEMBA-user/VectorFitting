@@ -51,6 +51,7 @@ public:
 	const std::vector<MatrixXcd>& getR() const;
 	const std::vector<Fitting::Sample>& getSamples() const;
 
+	std::vector<Complex> ss2pr();
 private:
 
 	MatrixXcd A_;
@@ -119,7 +120,6 @@ private:
 	static std::vector<Fitting::Sample> calcFsum(
 	        const std::vector<Fitting::Sample>& f,
 	        const Options& options);
-	std::vector<Complex> ss2pr();
 	void tri2full(Fitting fitting);
 
 };
