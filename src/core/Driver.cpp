@@ -113,7 +113,7 @@ void Driver::tri2full(Fitting fitting){
 
 	MatrixXcd A = fitting.getA();
 	VectorXcd E = fitting.getE();
-	MatrixXi B = fitting.getB();
+	MatrixXi B =  fitting.getB();
 	MatrixXcd C = fitting.getC();
 	VectorXcd D = fitting.getD();
 	const size_t N = A.cols();

@@ -36,6 +36,7 @@ Options::Options() {
     complexSpaceState_         = true;
     n_                         = 0;
     nu_                        = 1e-3;
+    iterations_				   = {4,1};
 }
 
 Options::~Options() {
