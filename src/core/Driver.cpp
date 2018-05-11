@@ -3,6 +3,7 @@
 //                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
 //                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
 //                    Alejandro García Montoro        (alejandro.garciamontoro@gmail.com)
+//					  Alejandra López de Aberasturi Gómez (aloaberasturi@ugr.es)
 //
 // This file is part of OpenSEMBA.
 //
@@ -23,6 +24,51 @@
 #include "Driver.h"
 
 namespace VectorFitting {
+
+
+Driver::Driver(
+        std::vector<Sample> samples,
+        const Options& opts,
+        const std::vector<Complex>& inputPoles,
+        const std::vector<MatrixXd>& weights) {
+
+    std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
+        return lower(a.first.imag(), b.first.imag());
+    });
+
+    std::vector<Complex> poles = inputPoles;
+    if (poles.empty() && !samples.empty()) {
+        std::pair<Real,Real> range(samples.front().first.imag(),
+                                   samples.back().first.imag());
+        poles = Fitting::buildPoles(range, opts);
+    } else {
+        poles = inputPoles;
+    }
+
+    std::vector<Fitting::Sample> squeezedSum = calcFsum(squeeze(samples), opts);
+    Fitting fitting1(squeezedSum, opts, poles, squeeze(weights));
+    for (size_t i = 0; i < opts.getIterations().first; ++i) {
+
+        fitting1.fit();
+    }
+
+    Fitting fitting2(squeeze(samples), opts, poles, squeeze(weights));
+    for (size_t i = 0; i < opts.getIterations().second; ++i) {
+
+        if (i == opts.getIterations().second - 1) {
+            fitting2.options().setSkipResidueIdentification(false);
+        }
+        fitting2.fit();
+    }
+    tri2full(fitting2);
+    std::pair<std::vector<Complex>, std::vector<MatrixXcd>> res = ss2pr();
+
+    if (!fitting2.getFittedSamples().empty()) {
+        samples_ = fitting2.getFittedSamples();
+    } else {
+        samples_ = fitting1.getFittedSamples();
+    }
+}
 
 
 std::vector<Fitting::Sample> Driver::squeeze(
@@ -59,50 +105,6 @@ std::vector<Fitting::Sample> Driver::calcFsum(
     }
 
 
-}
-
-Driver::Driver(
-        std::vector<Sample> samples,
-        const Options& opts,
-        const std::vector<Complex>& inputPoles,
-        const std::vector<MatrixXd>& weights) {
-
-    std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
-        return lower(a.first.imag(), b.first.imag());
-    });
-
-    std::vector<Complex> poles = inputPoles;
-    if (poles.empty() && !samples.empty()) {
-        std::pair<Real,Real> range(samples.front().first.imag(),
-                                   samples.back().first.imag());
-        poles = Fitting::buildPoles(range, opts);
-    } else {
-        poles = inputPoles;
-    }
-
-    std::vector<Fitting::Sample> squeezedSum = calcFsum(squeeze(samples), opts);
-    Fitting fitting1(squeezedSum, opts, poles, squeeze(weights));
-    for (size_t i = 0; i < opts.getIterations().first; ++i) {
-        //lines 382-392
-        fitting1.fit();
-    }
-
-    Fitting fitting2(squeeze(samples), opts, poles, squeeze(weights));
-    for (size_t i = 0; i < opts.getIterations().second; ++i) {
-        //lines 394-410
-        if (i == opts.getIterations().second - 1) {
-            fitting2.options().setSkipResidueIdentification(false);
-        }
-        fitting2.fit();
-    }
-    tri2full(fitting2);
-    poles_ = ss2pr();
-
-    if (!fitting2.getFittedSamples().empty()) {
-        samples_ = fitting2.getFittedSamples();
-    } else {
-        samples_ = fitting1.getFittedSamples();
-    }
 }
 
 
@@ -167,23 +169,19 @@ void Driver::tri2full(Fitting fitting){
 
 }
 
-std::vector<Complex> Driver::ss2pr() { //assumption: A & C are complex
+std::pair<std::vector<Complex>, std::vector<MatrixXcd>> Driver::ss2pr() const {
 
 	size_t Nr = C_.rows();
 	size_t N = A_.rows() / Nr;
+
 	std::vector<MatrixXcd> R;
-	MatrixXcd C = C_;
-	MatrixXi B = B_;
-
-
 	for (size_t i = 0; i < N; ++i){
 		MatrixXcd Raux = MatrixXcd::Zero(Nr,Nr);
 		std::vector<Complex> aux(N);
 		for (size_t j = 0; j < Nr; ++j){
-			size_t ind = j*N + i;
-
+			const size_t ind = j*N + i;
 			for (size_t k = 0; k < Nr; ++k){
-				aux[i] += ((Complex) C(k,ind)) * ((double) B(ind,k));
+				aux[i] += ((Complex) C_(k,ind)) * ((double) B_(ind,k));
 			}
 		}
 		Raux(0,0) = aux[0];
@@ -192,18 +190,17 @@ std::vector<Complex> Driver::ss2pr() { //assumption: A & C are complex
 		Raux(1,1) = aux[3];
 		R.push_back(Raux);
  	}
-	R_ = R;
-	MatrixXcd A = A_;
-	std::vector<Complex> poles;
 
+	std::vector<Complex> poles;
 	for (size_t i = 0; i < N; ++i){
 		for (size_t j = 0; j < N; ++j){
 			if (j == i){
-				poles.push_back(A(i,j));
+				poles.push_back(A_(i,j));
 			}
 		}
 	}
-	return poles;
+
+	return {poles, R};
 }
 
 const MatrixXcd& Driver::getA() const {
@@ -226,9 +223,6 @@ const MatrixXcd& Driver::getE() const {
 	return E_;
 }
 
-const std::vector<MatrixXcd>& Driver::getR() const {
-	return R_;
-}
 
 const std::vector<Fitting::Sample>& Driver::getSamples() const {
 	return samples_;

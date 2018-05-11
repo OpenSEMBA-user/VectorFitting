@@ -2,7 +2,8 @@
 // Copyright (C) 2015 Salvador Gonzalez Garcia        (salva@ugr.es)
 //                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
 //                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
-//                    Daniel Mateos Romero            (damarro@semba.guru)
+//                    Alejandro García Montoro        (alejandro.garciamontoro@gmail.com)
+//					  Alejandra López de Aberasturi Gómez (aloaberasturi@ugr.es)
 //
 // This file is part of OpenSEMBA.
 //

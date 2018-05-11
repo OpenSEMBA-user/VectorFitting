@@ -3,6 +3,7 @@
 //                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
 //                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
 //                    Alejandro García Montoro        (alejandro.garciamontoro@gmail.com)
+//					  Alejandra López de Aberasturi Gómez (aloaberasturi@ugr.es)
 //
 // This file is part of OpenSEMBA.
 //
@@ -18,6 +19,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
+
 
 #include "Fitting.h"
 #include "SpaceGenerator.h"
@@ -48,10 +50,9 @@ public:
 	const MatrixXcd& getC() const;
 	const MatrixXcd& getD() const;
 	const MatrixXcd& getE() const;
-	const std::vector<MatrixXcd>& getR() const;
 	const std::vector<Fitting::Sample>& getSamples() const;
 
-	std::vector<Complex> ss2pr();
+	std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr() const;
 private:
 
 	MatrixXcd A_;
@@ -59,9 +60,7 @@ private:
 	MatrixXcd C_;
 	MatrixXcd D_;
 	MatrixXcd E_;
-	std::vector<MatrixXcd> R_;
-    std::vector<Fitting::Sample> samples_;
-    std::vector<Complex> poles_;
+	std::vector<Fitting::Sample> samples_;
 
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
