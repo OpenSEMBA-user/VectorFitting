@@ -27,10 +27,12 @@ namespace VectorFitting {
 
 
 Driver::Driver(
-        std::vector<Sample> samples,
+        std::vector<Sample> samples2,
         const Options& opts,
         const std::vector<Complex>& inputPoles,
         const std::vector<MatrixXd>& weights) {
+
+    std::vector<Sample>& samples = samples2; // GDB bug.
 
     std::sort(samples.begin(), samples.end(), [](Sample a, Sample b) {
         return lower(a.first.imag(), b.first.imag());

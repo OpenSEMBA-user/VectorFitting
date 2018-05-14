@@ -26,6 +26,14 @@
 
 #include <cmath>
 
+
+
+#include <iostream>
+
+
+
+
+
 namespace VectorFitting {
 
 using namespace Eigen;
