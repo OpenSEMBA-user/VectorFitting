@@ -32,7 +32,7 @@ using namespace std;
 
 class DriverTest : public ::testing::Test {
 protected:
-	const double tol_ = 1e-6;
+	const double tol_ = 1.5e-5;
 };
 
 TEST_F(DriverTest, ctor) {
@@ -118,23 +118,23 @@ TEST_F(DriverTest,Matrix_A){
 
 	Driver driver(samples, opts);
 	// Checks values of returned parameters.
-	EXPECT_FLOAT_EQ(1.0e+02 * 0.0291, driver.getA()(0,0).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 0.1855, driver.getA()(1,1).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 2.3410, driver.getA()(2,2).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 2.3410, driver.getA()(3,3).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 0.0291, driver.getA()(4,4).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 0.1855, driver.getA()(5,5).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 2.3410, driver.getA()(6,6).real());
-	EXPECT_FLOAT_EQ(1.0e+02 * 2.3410, driver.getA()(7,7).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.2223, driver.getA()(0,0).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.4390, driver.getA()(1,1).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(2,2).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(3,3).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.2223, driver.getA()(4,4).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.4390, driver.getA()(5,5).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(6,6).real());
+	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(7,7).real());
 
-	EXPECT_FLOAT_EQ(1.0e+02 * .0,    driver.getA()(0,0).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .0,    driver.getA()(1,1).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .3406, driver.getA()(2,2).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .3406, driver.getA()(3,3).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .0,    driver.getA()(4,4).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .0,    driver.getA()(5,5).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .3406, driver.getA()(6,6).imag());
-	EXPECT_FLOAT_EQ(1.0e+02 * .3406, driver.getA()(7,7).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(0,0).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(1,1).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * 6.2730,  driver.getA()(2,2).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * -6.2730, driver.getA()(3,3).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(4,4).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(5,5).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * 6.2730,  driver.getA()(6,6).imag());
+	EXPECT_FLOAT_EQ(1.0e+03 * -6.2730, driver.getA()(7,7).imag());
 
 	for (size_t i = 0; i < driver.getA().rows(); ++i){
 		for (size_t j = 0; j < driver.getA().cols(); ++j){
@@ -354,38 +354,38 @@ TEST_F(DriverTest,Matrix_R){
 	Driver driver(samples, opts);
 	auto R = driver.ss2pr().second;
 
-	EXPECT_FLOAT_EQ(0.0203, R[0](0,0).real());
-	EXPECT_FLOAT_EQ(0.0407, R[0](0,1).real());
-	EXPECT_FLOAT_EQ(0.0407, R[0](1,0).real());
-	EXPECT_FLOAT_EQ(0.2771, R[0](1,1).real());
-	EXPECT_FLOAT_EQ(0.0007, R[1](0,0).real());
-	EXPECT_FLOAT_EQ(0.0015, R[1](0,1).real());
-	EXPECT_FLOAT_EQ(0.0015, R[1](1,0).real());
-	EXPECT_FLOAT_EQ(-0.1008,R[1](1,1).real());
-	EXPECT_FLOAT_EQ(-0.0414,R[2](0,0).real());
-	EXPECT_FLOAT_EQ(-0.0828,R[2](0,1).real());
-	EXPECT_FLOAT_EQ(-0.0828,R[2](1,0).real());
-	EXPECT_FLOAT_EQ(-0.3100,R[2](1,1).real());
-	EXPECT_FLOAT_EQ(-0.0414,R[3](0,0).real());
-	EXPECT_FLOAT_EQ(-0.0828,R[3](0,1).real());
-	EXPECT_FLOAT_EQ(-0.0828,R[3](1,0).real());
-	EXPECT_FLOAT_EQ(-0.3100,R[3](1,1).real());
-	EXPECT_FLOAT_EQ(0.0,    R[0](0,0).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[0](0,1).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[0](1,0).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[0](1,1).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[1](0,0).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[1](0,1).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[1](1,0).imag());
-	EXPECT_FLOAT_EQ(0.0,    R[1](1,1).imag());
-	EXPECT_FLOAT_EQ(0.1113, R[2](0,0).imag());
-	EXPECT_FLOAT_EQ(0.2227, R[2](0,1).real());
-	EXPECT_FLOAT_EQ(0.2227, R[2](1,0).real());
-	EXPECT_FLOAT_EQ(0.4228, R[2](1,1).real());
-	EXPECT_FLOAT_EQ(-0.1113,R[3](0,0).real());
-	EXPECT_FLOAT_EQ(-0.2227,R[3](0,1).real());
-	EXPECT_FLOAT_EQ(-0.4228,R[3](1,1).real());
-	EXPECT_FLOAT_EQ(-0.2227,R[3](1,0).real());
+	EXPECT_NEAR(0.0, R[0](0,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[0](0,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[0](1,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[0](1,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[1](0,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[1](0,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[1](1,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[1](1,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[2](0,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[2](0,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[2](1,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[2](1,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](0,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](0,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](1,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](1,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[0](0,0).imag(), tol_);
+	EXPECT_NEAR(0.0, R[0](0,1).imag(), tol_);
+	EXPECT_NEAR(0.0, R[0](1,0).imag(), tol_);
+	EXPECT_NEAR(0.0, R[0](1,1).imag(), tol_);
+	EXPECT_NEAR(0.0, R[1](0,0).imag(), tol_);
+	EXPECT_NEAR(0.0, R[1](0,1).imag(), tol_);
+	EXPECT_NEAR(0.0, R[1](1,0).imag(), tol_);
+	EXPECT_NEAR(0.0, R[1](1,1).imag(), tol_);
+	EXPECT_NEAR(0.0, R[2](0,0).imag(), tol_);
+	EXPECT_NEAR(0.0, R[2](0,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[2](1,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[2](1,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](0,0).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](0,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](1,1).real(), tol_);
+	EXPECT_NEAR(0.0, R[3](1,0).real(), tol_);
 
 }
 
@@ -416,15 +416,15 @@ TEST_F(DriverTest,Matrix_poles){
 
 	auto poles = driver.ss2pr().first;
 
-	EXPECT_FLOAT_EQ(-2.912231273155982,    poles[0].real());
-	EXPECT_FLOAT_EQ(-18.548225577281970,   poles[1].real());
-	EXPECT_FLOAT_EQ(-2.340975638498256e+02,poles[2].real());
-	EXPECT_FLOAT_EQ(-2.340975638498256e+02,poles[3].real());
+	EXPECT_FLOAT_EQ(-2.222719257260298e+02, poles[0].real());
+	EXPECT_FLOAT_EQ(-4.390094803597557e+02, poles[1].real());
+	EXPECT_FLOAT_EQ(-4.201729969020380e+01, poles[2].real());
+	EXPECT_FLOAT_EQ(-4.201729969020380e+01, poles[3].real());
 
 	EXPECT_FLOAT_EQ(0.0,                   poles[0].imag());
 	EXPECT_FLOAT_EQ(0.0,                   poles[1].imag());
-	EXPECT_FLOAT_EQ(8.340621081056502e+02, poles[2].imag());
-	EXPECT_FLOAT_EQ(-8.340621081056502e+02,poles[3].imag());
+	EXPECT_FLOAT_EQ( 6.273049560187480e+03, poles[2].imag());
+	EXPECT_FLOAT_EQ(-6.273049560187480e+03,poles[3].imag());
 }
 
 

@@ -68,7 +68,7 @@ private:
 	MatrixXcd C_;
 	MatrixXcd D_;
 	MatrixXcd E_;
-//	std::vector<Fitting::Sample> samples_;
+	std::vector<Fitting::Sample> samples_;
 
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
