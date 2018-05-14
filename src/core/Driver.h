@@ -65,8 +65,8 @@ private:
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
 	    T res = T::Zero(a.rows() + b.rows(), a.cols() + b.cols());
-	    for (Index i = 0; i < a.rows(); ++i) {
-	        for (Index j = 0; j < a.cols(); ++j) {
+	    for (typename T::Index i = 0; i < a.rows(); ++i) {
+	        for (typename T::Index j = 0; j < a.cols(); ++j) {
 	            res(i,j) = a(i,j);
 	        }
 	    }

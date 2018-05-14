@@ -148,12 +148,12 @@ void Driver::tri2full(Fitting fitting){
 				E(j,i) = E(tell);
 			}
 			for (size_t k = 0; k < i*N; ++k){
-				for (Index m = 0; m < C.cols(); ++m){
+				for (MatrixXcd::Index m = 0; m < C.cols(); ++m){
 					CC(i,j*N + k) = C(tell,m);
 				}
 			}
 			for (size_t l = 0; l < j*N; ++l){
-				for (Index m = 0; m < C.cols(); ++m){
+				for (MatrixXcd::Index m = 0; m < C.cols(); ++m){
 					CC(i,i*N + l) = C(tell,m);
 				}
 			}
