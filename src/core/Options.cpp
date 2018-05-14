@@ -34,7 +34,7 @@ Options::Options() {
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
     complexSpaceState_         = true;
-    n_                         = 16;
+    n_                         = 0;
     nu_                        = 1e-3;
     iterations_.first 		   = 4;
     iterations_.second   	   = 1;
