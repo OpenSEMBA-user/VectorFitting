@@ -49,7 +49,7 @@ public:
 	 * @param order     Order of approximation.
 	 * @param options   Options.
      */
-	Driver(std::vector<Sample> samples,
+	Driver(std::vector<Driver::Sample> samples,
            const Options& options,
            const std::vector<Complex>& poles = {},
            const std::vector<MatrixXd>& weights = {});
@@ -68,7 +68,7 @@ private:
 	MatrixXcd C_;
 	MatrixXcd D_;
 	MatrixXcd E_;
-	std::vector<Fitting::Sample> samples_;
+//	std::vector<Fitting::Sample> samples_;
 
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
@@ -89,7 +89,7 @@ private:
 
 
 	static std::vector<Fitting::Sample>
-	                squeeze(const std::vector<Sample>& samples);
+	                squeeze(const std::vector<Driver::Sample>& samples);
 
 
 	template <class T>

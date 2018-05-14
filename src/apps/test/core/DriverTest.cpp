@@ -106,16 +106,14 @@ TEST_F(DriverTest,Matrix_A){
 	opts.setIterations({4, 1});
 
 	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
+	std::vector<Real> freq =
+			linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
+	for (size_t i = 0; i < freq.size(); ++i) {
+		Complex s = {0, freq[i]};
+		MatrixXcd data(Nc,Nc);
+		data << Complex(1.0, 0.0), Complex(2.0, 0.0),
+				Complex(2.0, 0.0), Complex(3.0, 0.0);
+		samples.push_back({s, data});
 	}
 
 	Driver driver(samples, opts);
