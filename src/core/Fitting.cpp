@@ -90,7 +90,7 @@ std::vector<Complex> Fitting::buildPoles(
         // Generate all the starting poles
         std::vector<Complex> poles(options.getN());
         for (size_t i = 0; i < options.getN(); i+=2) {
-            Real imag = imagParts[i/2];
+            Real imag = - imagParts[i/2];
             Real real = - imag *  options.getNu();
             poles[i] = Complex(real, imag);
             poles[i+1] = conj(poles[i]);

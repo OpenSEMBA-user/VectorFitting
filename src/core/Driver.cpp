@@ -96,7 +96,7 @@ std::vector<Fitting::Sample> Driver::calcFsum(
     {
         std::vector<Fitting::Sample> fSum;
         for (size_t i = 0; i < f.size(); ++i){
-            VectorXcd sum(1,1);
+            VectorXcd sum(1);
             sum << f[i].second.sum();
             fSum.push_back(std::make_pair(f[i].first, sum));
         }
