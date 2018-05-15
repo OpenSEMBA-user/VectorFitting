@@ -587,14 +587,19 @@ TEST_F(FittingTest, basic) {
     const size_t Ns = 20;
 
     std::vector<Fitting::Sample> samples;
-    std::vector<Real> weights;
-    std::vector<Real> freq = linspace({1.0, 1000.0}, Ns);
+    VectorXd weights;
+    std::pair<double,double> pair = {1.0,1000.0};
+    std::vector<Real> freq = linspace(pair, Ns);
     for (size_t i = 0; i < freq.size(); i++) {
         VectorXcd f(3);
-        f << 1.0 << 2.0 << 3.0;
-        samples.push_back({Complex(0.0, 2.0*M_PI*freq[i]), f}):
-        weights_push_back(1.0);
+        f << 1.0;
+        f << 2.0;
+        f << 3.0;
+        samples.push_back({Complex(0.0, 2.0*M_PI*freq[i]), f});
+        weights << 1.0;
     }
+
+
 
     Options opts;
     opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
@@ -610,7 +615,7 @@ TEST_F(FittingTest, basic) {
             Complex(-0.006283185307180e3, + 6.283185307179586e3)
     };
 
-    Fitting fitting(samples, opts, poles, weights);
+    Fitting fitting(samples, opts, poles, {weights});
     fitting.fit();
 
     // TODO
