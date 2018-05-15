@@ -71,8 +71,6 @@ public:
 
     std::vector<Sample>  getFittedSamples() const;
 
-    static std::vector<Complex> buildPoles(
-            const std::pair<Real, Real>& range, const Options& opts);
     std::vector<Complex> getPoles();
 
     /**
@@ -129,8 +127,6 @@ private:
 
     static constexpr Real toleranceLow_  = 1e-18;
     static constexpr Real toleranceHigh_ = 1e+18;
-
-    void check();
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;

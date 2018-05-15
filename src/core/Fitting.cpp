@@ -28,12 +28,28 @@
 
 namespace VectorFitting {
 
-void Fitting::check() {
-    if (samples_.size() == 0) {
+Fitting::Fitting(
+        const std::vector<Sample>& samples,
+        const Options& options,
+        const std::vector<Complex>& poles,
+		const std::vector<VectorXd>& weights) :
+                options_(options),
+                samples_(samples),
+                poles_(poles),
+                weights_(weights) {
+    std::sort(samples_.begin(), samples_.end(), [](Sample a, Sample b) {
+        return lower(a.first.imag(), b.first.imag());
+    });
+
+    if (poles_.empty()) {
+        throw std::runtime_error("Poles size can not be zero.");
+    }
+
+    if (samples_.empty()) {
         throw std::runtime_error("Samples size cannot be zero");
     }
 
-    if (weights_.size() != 0 && (size_t) weights_.size() != samples_.size()) {
+    if (!weights_.empty() && weights_.size() != samples_.size()) {
         throw std::runtime_error("Weights and samples must have same size.");
     }
     if (weights_.empty()) {
@@ -56,58 +72,6 @@ void Fitting::check() {
     }
 }
 
-Fitting::Fitting(
-        const std::vector<Sample>& samples,
-        const Options& options,
-        const std::vector<Complex>& poles,
-		const std::vector<VectorXd>& weights) :
-                options_(options),
-                samples_(samples),
-                poles_(poles),
-                weights_(weights) {
-    std::sort(samples_.begin(), samples_.end(), [](Sample a, Sample b) {
-        return lower(a.first.imag(), b.first.imag());
-    });
-    if (poles_.empty() && !samples.empty()) {
-        std::pair<Real,Real> range(samples.front().first.imag(),
-                                   samples.back().first.imag());
-        poles_ = buildPoles(range, options);
-    }
-    Fitting::check();
-}
-
-std::vector<Complex> Fitting::buildPoles(
-        const std::pair<Real, Real>& range,
-        const Options& options) {
-
-    // Generate the imaginary parts of the initial poles from a linear
-    // distribution covering the range in the samples.
-    // This can also be done with a logarithmic distribution (sometimes
-    // faster convergence -see Userguide, p.8-)
-    std::vector<Real> imagParts;
-    if (options.getPolesType() == Options::PolesType::lincmplx) {
-        imagParts = linspace(range, options.getN()/2);
-        // Generate all the starting poles
-        std::vector<Complex> poles(options.getN());
-        for (size_t i = 0; i < options.getN(); i+=2) {
-            Real imag = - imagParts[i/2];
-            Real real = - imag *  options.getNu();
-            poles[i] = Complex(real, imag);
-            poles[i+1] = conj(poles[i]);
-        }
-
-        if (options.getN() % 2 != 0) {
-            std::complex<Real> extraPole;
-            extraPole = -(range.first + range.second)/2.0;
-            poles.push_back(extraPole);
-        }
-        return poles;
-    } else {
-        throw std::runtime_error(
-                "log distributed initial poles hasn't been implemented yet");
-    }
-
-}
 
 void Fitting::fit(){
     // Following Gustavssen notation in vectfit3.m .

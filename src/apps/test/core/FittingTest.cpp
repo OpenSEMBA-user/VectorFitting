@@ -1,4 +1,4 @@
-// OpenSEMBA
+// OpenSEMBAPtions
 // Copyright (C) 2015 Salvador Gonzalez Garcia        (salva@ugr.es)
 //                    Luis Manuel Diaz Angulo         (lmdiazangulo@semba.guru)
 //                    Miguel David Ruiz-Cabello Nuñez (miguel@semba.guru)
@@ -582,3 +582,37 @@ TEST_F(FittingTest, paperSection4) {
     EXPECT_NEAR(0.0, fitting.getMaxDeviation(), 1e-8);
 }
 
+
+TEST_F(FittingTest, basic) {
+    const size_t Ns = 20;
+
+    std::vector<Fitting::Sample> samples;
+    std::vector<Real> weights;
+    std::vector<Real> freq = linspace({1.0, 1000.0}, Ns);
+    for (size_t i = 0; i < freq.size(); i++) {
+        VectorXcd f(3);
+        f << 1.0 << 2.0 << 3.0;
+        samples.push_back({Complex(0.0, 2.0*M_PI*freq[i]), f}):
+        weights_push_back(1.0);
+    }
+
+    Options opts;
+    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
+    opts.setStable(true);
+    opts.setRelax(true);
+    opts.setSkipResidueIdentification(false);
+    opts.setSkipPoleIdentification(false);
+
+    std::vector<Complex> poles = {
+            Complex(-0.000006283185307e3, - 0.006283185307180e3),
+            Complex(-0.000006283185307e3, + 0.006283185307180e3),
+            Complex(-0.006283185307180e3, - 6.283185307179586e3),
+            Complex(-0.006283185307180e3, + 6.283185307179586e3)
+    };
+
+    Fitting fitting(samples, opts, poles, weights);
+    fitting.fit();
+
+    // TODO
+
+}

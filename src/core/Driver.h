@@ -61,6 +61,11 @@ public:
 	const std::vector<Fitting::Sample>& getSamples() const;
 
 	std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr() const;
+
+//protected:
+    static std::vector<Complex> buildPoles(
+            const std::pair<Real, Real>& range, const Options& opts);
+
 private:
 
 	MatrixXcd A_;

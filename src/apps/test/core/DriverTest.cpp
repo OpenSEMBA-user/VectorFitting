@@ -33,6 +33,33 @@ using namespace std;
 class DriverTest : public ::testing::Test {
 protected:
 	const double tol_ = 1.5e-5;
+
+	size_t Ns, N, Nc;
+	Options opts;
+    std::vector<Driver::Sample> samples;
+
+	void SetUp() {
+	    Ns = 20;
+	    N = 4;
+	    Nc = 2;
+
+	    opts.setPolesType(Options::PolesType::lincmplx);
+	    opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
+	    opts.setN(4);
+	    opts.setIterations({0, 1});
+
+	    {
+	        std::vector<Real> freq =
+	                linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
+	        for (size_t i = 0; i < freq.size(); ++i) {
+	            Complex s = {0, freq[i]};
+	            MatrixXcd data(Nc,Nc);
+	            data << Complex(1.0, 0.0), Complex(2.0, 0.0),
+	                    Complex(2.0, 0.0), Complex(3.0, 0.0);
+	            samples.push_back({s, data});
+	        }
+	    }
+	}
 };
 
 TEST_F(DriverTest, ctor) {
@@ -46,32 +73,7 @@ TEST_F(DriverTest, ctor) {
 }
 
 TEST_F(DriverTest, simple_case){
-
-	const size_t Ns = 20;
-	const size_t N = 4;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
-
 	Driver driver(samples, opts);
-
 	// Checks sizes of returned fitting parameters.
 	EXPECT_EQ(Nc*N, driver.getA().rows());
 	EXPECT_EQ(Nc*N, driver.getA().cols());
@@ -93,83 +95,57 @@ TEST_F(DriverTest, simple_case){
 
 }
 
+TEST_F(DriverTest, Initial_poles_lincmplx) {
+    std::pair<Real,Real> range(2*M_PI*1.0, 2*M_PI*1000.0);
+    Options opts;
+    opts.setN(4);
+    opts.setPolesType(Options::PolesType::lincmplx);
 
-TEST_F(DriverTest,Matrix_A){
+    std::vector<Complex> poles = Driver::buildPoles(range, opts);
 
-	const size_t Ns = 20;
-	const size_t Nc = 2;
+    EXPECT_FLOAT_EQ(-0.000006283185307e3, poles[0].real());
+    EXPECT_FLOAT_EQ(-0.000006283185307e3, poles[1].real());
+    EXPECT_FLOAT_EQ(-0.006283185307180e3, poles[2].real());
+    EXPECT_FLOAT_EQ(-0.006283185307180e3, poles[3].real());
 
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
+    EXPECT_FLOAT_EQ(-0.006283185307180e3, poles[0].imag());
+    EXPECT_FLOAT_EQ(+0.006283185307180e3, poles[1].imag());
+    EXPECT_FLOAT_EQ(-6.283185307179586e3, poles[2].imag());
+    EXPECT_FLOAT_EQ(+6.283185307179586e3, poles[3].imag());
+}
 
-	std::vector<Driver::Sample> samples;
-	std::vector<Real> freq =
-			linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-	for (size_t i = 0; i < freq.size(); ++i) {
-		Complex s = {0, freq[i]};
-		MatrixXcd data(Nc,Nc);
-		data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-				Complex(2.0, 0.0), Complex(3.0, 0.0);
-		samples.push_back({s, data});
-	}
-
+TEST_F(DriverTest, Matrix_A) {
 	Driver driver(samples, opts);
 	// Checks values of returned parameters.
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.2223, driver.getA()(0,0).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.4390, driver.getA()(1,1).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(2,2).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(3,3).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.2223, driver.getA()(4,4).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.4390, driver.getA()(5,5).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(6,6).real());
-	EXPECT_FLOAT_EQ(1.0e+03 * -0.0420, driver.getA()(7,7).real());
+	EXPECT_FLOAT_EQ(-0.2223e3, driver.getA()(0,0).real());
+	EXPECT_FLOAT_EQ(-0.4390e3, driver.getA()(1,1).real());
+	EXPECT_FLOAT_EQ(-0.0420e3, driver.getA()(2,2).real());
+	EXPECT_FLOAT_EQ(-0.0420e3, driver.getA()(3,3).real());
+	EXPECT_FLOAT_EQ(-0.2223e3, driver.getA()(4,4).real());
+	EXPECT_FLOAT_EQ(-0.4390e3, driver.getA()(5,5).real());
+	EXPECT_FLOAT_EQ(-0.0420e3, driver.getA()(6,6).real());
+	EXPECT_FLOAT_EQ(-0.0420e3, driver.getA()(7,7).real());
 
-	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(0,0).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(1,1).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * 6.2730,  driver.getA()(2,2).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * -6.2730, driver.getA()(3,3).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(4,4).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * .0,      driver.getA()(5,5).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * 6.2730,  driver.getA()(6,6).imag());
-	EXPECT_FLOAT_EQ(1.0e+03 * -6.2730, driver.getA()(7,7).imag());
+	EXPECT_FLOAT_EQ( 0.0000e3, driver.getA()(0,0).imag());
+	EXPECT_FLOAT_EQ( 0.0000e3, driver.getA()(1,1).imag());
+	EXPECT_FLOAT_EQ( 6.2730e3, driver.getA()(2,2).imag());
+	EXPECT_FLOAT_EQ(-6.2730e3, driver.getA()(3,3).imag());
+	EXPECT_FLOAT_EQ( 0.0000e3, driver.getA()(4,4).imag());
+	EXPECT_FLOAT_EQ( 0.0000e3, driver.getA()(5,5).imag());
+	EXPECT_FLOAT_EQ( 6.2730e3, driver.getA()(6,6).imag());
+	EXPECT_FLOAT_EQ(-6.2730e3, driver.getA()(7,7).imag());
 
-	for (size_t i = 0; i < driver.getA().rows(); ++i){
-		for (size_t j = 0; j < driver.getA().cols(); ++j){
+	for (auto i = 0; i < driver.getA().rows(); ++i){
+		for (auto j = 0; j < driver.getA().cols(); ++j){
 			if (i != j){
 				EXPECT_FLOAT_EQ(0.0, driver.getA()(i,j).real());
 				EXPECT_FLOAT_EQ(0.0, driver.getA()(i,j).imag());
 			}
 		}
 	}
-
 }
 
 TEST_F(DriverTest,Matrix_B){
-
-	const size_t Ns = 20;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
 
 	Driver driver(samples, opts);
 
@@ -193,28 +169,6 @@ TEST_F(DriverTest,Matrix_B){
 }
 
 TEST_F(DriverTest,Matrix_C){
-
-	const size_t Ns = 20;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
 
 	Driver driver(samples, opts);
 
@@ -258,27 +212,6 @@ TEST_F(DriverTest,Matrix_C){
 
 TEST_F(DriverTest,Matrix_D){
 
-	const size_t Ns = 20;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
-
 	Driver driver(samples, opts);
 
 	EXPECT_FLOAT_EQ(1.0,driver.getD()(0,0).real());
@@ -297,27 +230,6 @@ TEST_F(DriverTest,Matrix_D){
 
 TEST_F(DriverTest,Matrix_E){
 
-	const size_t Ns = 20;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
-
 	Driver driver(samples, opts);
 
 	EXPECT_NEAR(0.0, driver.getE()(0,0).real(), tol_);
@@ -329,27 +241,6 @@ TEST_F(DriverTest,Matrix_E){
 
 
 TEST_F(DriverTest,Matrix_R){
-
-	const size_t Ns = 20;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
 
 	Driver driver(samples, opts);
 	auto R = driver.ss2pr().second;
@@ -390,27 +281,6 @@ TEST_F(DriverTest,Matrix_R){
 }
 
 TEST_F(DriverTest,Matrix_poles){
-
-	const size_t Ns = 20;
-	const size_t Nc = 2;
-
-	Options opts;
-	opts.setPolesType(Options::PolesType::lincmplx);
-	opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-	opts.setN(4);
-	opts.setIterations({4, 1});
-	std::vector<Driver::Sample> samples;
-	{
-		std::vector<Real> freq =
-				linspace(std::make_pair(2*M_PI*1.0, 2*M_PI*1000.0), Ns);
-		for (size_t i = 0; i < freq.size(); ++i) {
-			Complex s = {0, freq[i]};
-			MatrixXcd data(Nc,Nc);
-			data << Complex(1.0, 0.0), Complex(2.0, 0.0),
-					Complex(2.0, 0.0), Complex(3.0, 0.0);
-			samples.push_back({s, data});
-		}
-	}
 
 	Driver driver(samples, opts);
 

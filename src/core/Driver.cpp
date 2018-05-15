@@ -42,7 +42,7 @@ Driver::Driver(
     if (poles.empty() && !samples.empty()) {
         std::pair<Real,Real> range(samples.front().first.imag(),
                                    samples.back().first.imag());
-        poles = Fitting::buildPoles(range, opts);
+        poles = buildPoles(range, opts);
     } else {
         poles = inputPoles;
     }
@@ -50,7 +50,6 @@ Driver::Driver(
     std::vector<Fitting::Sample> squeezedSum = calcFsum(squeeze(samples), opts);
     Fitting fitting1(squeezedSum, opts, poles, squeeze(weights));
     for (size_t i = 0; i < opts.getIterations().first; ++i) {
-
         fitting1.fit();
     }
 
@@ -63,7 +62,6 @@ Driver::Driver(
         fitting2.fit();
     }
     tri2full(fitting2);
-    std::pair<std::vector<Complex>, std::vector<MatrixXcd>> res = ss2pr();
 
     if (!fitting2.getFittedSamples().empty()) {
         samples_ = fitting2.getFittedSamples();
@@ -87,6 +85,32 @@ std::vector<Fitting::Sample> Driver::squeeze(
     }
     return res;
 }
+
+std::vector<Complex> Driver::buildPoles(
+        const std::pair<Real, Real>& range,
+        const Options& options) {
+    if (options.getPolesType() == Options::PolesType::lincmplx) {
+        std::vector<Real> imagParts = linspace(range, options.getN()/2);
+        std::vector<Complex> poles(options.getN());
+        for (size_t i = 0; i < options.getN(); i+=2) {
+            Real imag = - imagParts[i/2];
+            Real real = imag *  options.getNu();
+            poles[i] = Complex(real, imag);
+            poles[i+1] = conj(poles[i]);
+        }
+
+        if (options.getN() % 2 != 0) {
+            std::complex<Real> extraPole;
+            extraPole = -(range.first + range.second)/2.0;
+            poles.push_back(extraPole);
+        }
+        return poles;
+    } else {
+        throw std::runtime_error(
+                "log distributed initial poles hasn't been implemented yet");
+    }
+}
+
 
 std::vector<Fitting::Sample> Driver::calcFsum(
         const std::vector<Fitting::Sample>& f,
@@ -115,7 +139,7 @@ void Driver::tri2full(Fitting fitting){
 
 	MatrixXcd A = fitting.getA();
 	VectorXcd E = fitting.getE();
-	MatrixXi B =  fitting.getB();
+	MatrixXi  B = fitting.getB();
 	MatrixXcd C = fitting.getC();
 	VectorXcd D = fitting.getD();
 	const size_t N = A.cols();
