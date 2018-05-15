@@ -598,6 +598,8 @@ TEST_F(FittingTest, basic) {
         weights.push_back(weight);
     }
 
+
+
     Options opts;
     opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
     opts.setStable(true);
@@ -607,9 +609,9 @@ TEST_F(FittingTest, basic) {
 
     std::vector<Complex> poles = {
             Complex(-0.000006283185307e3, - 0.006283185307180e3),
-            Complex(-0.000006283185307e3, + 0.006283185307180e3)
-//            Complex(-0.006283185307180e3, - 6.283185307179586e3),
-//            Complex(-0.006283185307180e3, + 6.283185307179586e3)
+            Complex(-0.000006283185307e3, + 0.006283185307180e3),
+            Complex(-0.006283185307180e3, - 6.283185307179586e3),
+            Complex(-0.006283185307180e3, + 6.283185307179586e3)
     };
 
     Fitting fitting(samples, opts, poles, weights);

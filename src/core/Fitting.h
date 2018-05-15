@@ -125,8 +125,8 @@ private:
 
     std::vector<VectorXd> weights_; // Size: Ns, Nc
 
-    static constexpr Real toleranceLow_  = 1e-18;
-    static constexpr Real toleranceHigh_ = 1e+18;
+    static constexpr Real toleranceLow_  = 1e-8;
+    static constexpr Real toleranceHigh_ = 1e+8;
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;

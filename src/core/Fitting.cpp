@@ -151,21 +151,21 @@ void Fitting::fit(){
         }
         scale = std::sqrt(scale) / (Real) Ns;
 
-        VectorXd x(N+1);
+        size_t offs;
+        switch (options_.getAsymptoticTrend()) {
+        case Options::AsymptoticTrend::zero:
+            offs = 0;
+            break;
+        case Options::AsymptoticTrend::constant:
+            offs = 1;
+            break;
+        case Options::AsymptoticTrend::linear:
+            offs = 2;
+            break;
+        }
 
+        VectorXd x(N+1);
         if (options_.isRelax()) {
-            size_t offs;
-            switch (options_.getAsymptoticTrend()) {
-            case Options::AsymptoticTrend::zero:
-                offs = 0;
-                break;
-            case Options::AsymptoticTrend::constant:
-                offs = 1;
-                break;
-            case Options::AsymptoticTrend::linear:
-                offs = 2;
-                break;
-            }
 
             // Computes AA and bb. Corresponding line in vectfit3.m code: 319
             MatrixXd AA = MatrixXd::Zero(Nc*(N+1), N+1);
@@ -235,7 +235,7 @@ void Fitting::fit(){
                 AA.col(col) *= Escale(col);
             }
 
-            x = AA.colPivHouseholderQr().solve(bb);
+            x = AA.fullPivHouseholderQr().solve(bb);
             for (size_t i = 0; i < N+1; ++i) {
                 x(i) *= Escale(i);
             }
@@ -245,8 +245,89 @@ void Fitting::fit(){
         if (!options_.isRelax() //Line 372
                 || lower  (std::abs(x(N)), toleranceLow_)
                 || greater(std::abs(x(N)), toleranceHigh_) ) {
-            throw std::runtime_error("Option to do not relax is not implemented");
-            // TODO Implement this.
+
+            MatrixXd AA(Nc*N, N);
+            VectorXd bb(Nc*N, N);
+
+            Real Dnew;
+            if (!options_.isRelax()) {
+                Dnew = 1.0;
+            } else {
+                if (equal(x(N), 0.0)) {
+                    Dnew = 1.0;
+                } else if (lower  (std::abs(x(N)), toleranceLow_)) {
+                    std::signbit(x(N)) ?
+                            Dnew = toleranceLow_ : Dnew  = - toleranceLow_;
+                } else if (greater(std::abs(x(N)), toleranceHigh_)) {
+                    std::signbit(x(N)) ?
+                            Dnew = toleranceHigh_ : Dnew = - toleranceHigh_;
+                } else {
+                    throw std::runtime_error("Can not relax constant term");
+                }
+            }
+
+            for (size_t n = 0; n < Nc; ++n) {
+                MatrixXd A(2*Ns, N+offs+N);
+                RowVectorXd Escale(N);
+
+                VectorXd weig(Ns);
+                for (size_t i = 0; i < Ns; ++i) {
+                    if (weights_[i].size() > 1) {
+                        weig(i) = weights_[i](n);
+                    } else if (weights_[i].size() == 1) {
+                        weig(i) = weights_[i](0);
+                    } else {
+                        throw std::runtime_error("Invalid weight operation");
+                    }
+                }
+
+                for (size_t m = 0; m < N+offs; ++m) {
+                    for (size_t i = 0; i < Ns; ++i) {
+                        A(i,m)     = std::real(weig(i) * Dk(i,m));
+                        A(i+Ns, m) = std::imag(weig(i) * Dk(i,m));
+                    }
+                }
+
+                MatrixXd::Index inda = N + offs;
+                for (size_t m = 0; m < N; ++m) {
+                    for (size_t i = 0; i < Ns; ++i) {
+                        Complex aux = - weig(i) * Dk(i,m) *
+                                std::conj(samples_[i].second(n));
+                        A.col(i,    inda + m) = std::real(aux);
+                        A.col(i+Ns, inda + m) = std::imag(aux);
+                    }
+                }
+
+                VectorXd b(2*Ns);
+                for (size_t i = 0; i < Ns; ++i) {
+                    Complex aux = Dnew*weig* std::conj(samples_[i].second(n));
+                    b(i)    = std::real(aux);
+                    b(i+Ns) = std::imag(aux);
+                }
+
+                MatrixXd Q, R;
+                HouseholderQR<MatrixXd> qr(A.rows(), A.cols());
+                qr.compute(A);
+                Q = qr.householderQ() * MatrixXd::Identity(A.rows(),A.cols());
+                R = Q.transpose() * A;
+                MatrixXd::Index ind = N+offs;
+                MatrixXd R22 = R.block(ind,ind, N,N);
+                AA.block(n*N, 0, N, N) = R22;
+                bb.block(n*N, 0, N, 1) =
+                        Q.block(0, ind, A.rows(), N).transpose() * b;
+            }
+
+            VectorXd Escale = VectorXd::Zero(N);
+            for (MatrixXd::Index col = 0; col < AA.cols(); ++col) {
+                Escale(col) = 1 / AA.col(col).norm();
+                AA.col(col) *= Escale(col);
+            }
+
+            VectorXd xAux = AA.fullPivHouseholderQr(bb));
+            xAux *= Escale;
+            VectorXd x(N+1);
+            x.block(0,N) = xAux;
+            x(N) = Dnew;
         }
 
         VectorXcd C = VectorXcd::Zero(N); // Line 433
