@@ -100,7 +100,17 @@ void Fitting::fit(){
             LAMBD(i,i) = poles_[i];
         }
 
-        MatrixXcd Dk = MatrixXcd::Zero(Ns,N+2);
+        MatrixXcd Dk;
+        switch (options_.getAsymptoticTrend()) {
+        case Options::AsymptoticTrend::zero:
+        case Options::AsymptoticTrend::constant:
+            Dk = MatrixXcd::Zero(Ns,N+1);
+            break;
+        case Options::AsymptoticTrend::linear:
+            Dk = MatrixXcd::Zero(Ns,N+2);
+            break;
+        }
+
         MatrixXcd LAMBDprime = LAMBD.transpose().conjugate();
         for (size_t m = 0; m < N; ++m) {
             if (cindex(m) == 0) { // Real pole.
@@ -127,9 +137,13 @@ void Fitting::fit(){
         Real scale = 0.0;
         for (size_t m = 0; m < Nc; ++m) {
             for (size_t i = 0; i < Ns; ++i) {
-                Real weight = 1.0;
-                if (weights_.size() > 0 && weights_[i].size() > 0) {
+                Real weight;
+                if (weights_.size() > 0 && weights_[i].size() > 1) {
                     weight = weights_[i](m);
+                } else if (weights_.size() > 0 && weights_[i].size() > 1) {
+                    weight = weights_[i](0);
+                } else {
+                    weight = 1.0;
                 }
                 const Complex sample = samples_[i].second[m];
                 scale += std::pow(std::abs(weight * std::conj(sample)), 2);
@@ -160,7 +174,13 @@ void Fitting::fit(){
                 MatrixXd A = MatrixXd::Zero(2*Ns+1, (N+offs)+N+1);
                 VectorXd weig(Ns);
                 for (size_t i = 0; i < Ns; ++i) {
-                    weig(i) = weights_[i](n);
+                    if (weights_[i].size() > 1) {
+                        weig(i) = weights_[i](n);
+                    } else if (weights_[i].size() == 1) {
+                        weig(i) = weights_[i](0);
+                    } else {
+                        throw std::runtime_error("Invalid weight operation");
+                    }
                 }
                 // Left block.
                 for (size_t m = 0; m < N + offs; ++m) {
@@ -210,13 +230,12 @@ void Fitting::fit(){
             // Computes scaling factor. Line 360
             VectorXd Escale = VectorXd::Zero(N+1);
             for (size_t col = 0; col < N+1; ++col) {
-                Escale(col) = 1.0 / AA.col(col).norm();
-                for (size_t i = 0; i < Nc*(N+1); ++i) {
-                    AA(i,col) = Escale(col) * AA(i,col);
-                }
+                const double norm = AA.col(col).norm();
+                Escale(col) = 1.0 / norm;
+                AA.col(col) *= Escale(col);
             }
 
-            x = AA.householderQr().solve(bb);
+            x = AA.colPivHouseholderQr().solve(bb);
             for (size_t i = 0; i < N+1; ++i) {
                 x(i) *= Escale(i);
             }
@@ -224,7 +243,7 @@ void Fitting::fit(){
         } // End of if for "relax" flag.
 
         if (!options_.isRelax() //Line 372
-                || lower  (std::abs(x(0)), toleranceLow_)
+                || lower  (std::abs(x(N)), toleranceLow_)
                 || greater(std::abs(x(N)), toleranceHigh_) ) {
             throw std::runtime_error("Option to do not relax is not implemented");
             // TODO Implement this.
