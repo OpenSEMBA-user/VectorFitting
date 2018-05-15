@@ -80,7 +80,7 @@ void Fitting::fit(){
     const size_t Nc = getResponseSize();
 
     VectorXcd SERD(Nc), SERE(Nc);
-    VectorXi SERB(N);
+    VectorXi SERB = VectorXi::Ones(N);
     RowVectorXcd SERA(1,N);
     MatrixXcd  SERC(Nc, N);
     for (size_t i = 0; i < N; ++i) {
@@ -100,29 +100,36 @@ void Fitting::fit(){
             LAMBD(i,i) = poles_[i];
         }
 
-        MatrixXcd Dk = MatrixXcd::Zero(Ns,N+2);
+        MatrixXcd Dk;
+        if (options_.getAsymptoticTrend() == Options::AsymptoticTrend::linear) {
+        	MatrixXcd Dk = MatrixXcd::Zero(Ns, N+2);
+        	for (size_t i = 0; i < Ns; ++i) {
+        		Dk(i,N) = (Real) 1.0;
+        		Dk(i, N+1) = samples_[i].first;
+        	}
+        } else {
+        	MatrixXcd Dk = MatrixXcd::Zero(Ns, N+1);
+        	for (size_t i = 0; i < Ns; ++i) {
+        		Dk(i,N) = (Real) 1.0;
+        	}
+        }
         MatrixXcd LAMBDprime = LAMBD.transpose().conjugate();
         for (size_t m = 0; m < N; ++m) {
-            if (cindex(m) == 0) { // Real pole.
-                for (size_t i = 0; i < Ns; ++i) {
-                    Dk(i,m) = Complex(1,0) / (samples_[i].first - LAMBD(m,m));
-                }
-            } else if (cindex(m) == 1) { // Complex pole, first part.
-                for (size_t i = 0; i < Ns; ++i) {
-                    Dk(i,m)   = Complex(1,0) / (samples_[i].first - LAMBD(m,m))
-                               + Complex(1,0) / (samples_[i].first - LAMBDprime(m,m));
-                    Dk(i,m+1) = Complex(0,1) / (samples_[i].first - LAMBD(m,m))
-                               - Complex(0,1) / (samples_[i].first - LAMBDprime(m,m));
-                }
+        	if (cindex(m) == 0) { // Real pole.
+        		for (size_t i = 0; i < Ns; ++i) {
+        			Dk(i,m) = Complex(1,0) / (samples_[i].first - LAMBD(m,m));
+        		}
+        	} else if (cindex(m) == 1) { // Complex pole, first part.
+        		for (size_t i = 0; i < Ns; ++i) {
+        			Dk(i,m)   = Complex(1,0) / (samples_[i].first - LAMBD(m,m))
+                         + Complex(1,0) / (samples_[i].first - LAMBDprime(m,m));
+        			Dk(i,m+1) = Complex(0,1) / (samples_[i].first - LAMBD(m,m))
+                         - Complex(0,1) / (samples_[i].first - LAMBDprime(m,m));
+
+        		}
             }
         }
-        for (size_t i = 0; i < Ns; ++i) {
-            Dk(i,N) = (Real) 1.0;
-            if (options_.getAsymptoticTrend() ==
-            		Options::AsymptoticTrend::linear) {
-                Dk(i,N+1) = samples_[i].first;
-            }
-        }
+
         // Scaling for last row of LS-problem (pole identification).
         Real scale = 0.0;
         for (size_t m = 0; m < Nc; ++m) {
