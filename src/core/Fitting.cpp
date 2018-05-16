@@ -246,9 +246,6 @@ void Fitting::fit(){
                 || lower  (std::abs(x(N)), toleranceLow_)
                 || greater(std::abs(x(N)), toleranceHigh_) ) {
 
-            MatrixXd AA(Nc*N, N);
-            VectorXd bb(Nc*N, N);
-
             Real Dnew;
             if (!options_.isRelax()) {
                 Dnew = 1.0;
@@ -266,9 +263,10 @@ void Fitting::fit(){
                 }
             }
 
+
+            MatrixXd AA(Nc*N, N);
+            VectorXd bb(Nc*N);
             for (size_t n = 0; n < Nc; ++n) {
-                MatrixXd A(2*Ns, N+offs+N);
-                RowVectorXd Escale(N);
 
                 VectorXd weig(Ns);
                 for (size_t i = 0; i < Ns; ++i) {
@@ -281,35 +279,38 @@ void Fitting::fit(){
                     }
                 }
 
-                for (size_t m = 0; m < N+offs; ++m) {
-                    for (size_t i = 0; i < Ns; ++i) {
-                        A(i,m)     = std::real(weig(i) * Dk(i,m));
-                        A(i+Ns, m) = std::imag(weig(i) * Dk(i,m));
+                MatrixXd A(2*Ns, N+offs+N);
+                {
+                    for (size_t m = 0; m < N+offs; ++m) {
+                        for (size_t i = 0; i < Ns; ++i) {
+                            A(i,m)     = std::real(weig(i) * Dk(i,m));
+                            A(i+Ns, m) = std::imag(weig(i) * Dk(i,m));
+                        }
                     }
-                }
-
-                MatrixXd::Index inda = N + offs;
-                for (size_t m = 0; m < N; ++m) {
-                    for (size_t i = 0; i < Ns; ++i) {
-                        Complex aux = - weig(i) * Dk(i,m) *
-                                std::conj(samples_[i].second(n));
-                        A.col(i,    inda + m) = std::real(aux);
-                        A.col(i+Ns, inda + m) = std::imag(aux);
+                    MatrixXd::Index inda = N + offs;
+                    for (size_t m = 0; m < N; ++m) {
+                        for (size_t i = 0; i < Ns; ++i) {
+                            Complex aux = - weig(i) *
+                                    Dk(i,m) * std::conj(samples_[i].second(n));
+                            A(i,    inda+m) = std::real(aux);
+                            A(i+Ns, inda+m) = std::imag(aux);
+                        }
                     }
                 }
 
                 VectorXd b(2*Ns);
                 for (size_t i = 0; i < Ns; ++i) {
-                    Complex aux = Dnew*weig* std::conj(samples_[i].second(n));
+                    Complex aux =
+                            Dnew * weig(i) * std::conj(samples_[i].second(n));
                     b(i)    = std::real(aux);
                     b(i+Ns) = std::imag(aux);
                 }
 
-                MatrixXd Q, R;
                 HouseholderQR<MatrixXd> qr(A.rows(), A.cols());
                 qr.compute(A);
-                Q = qr.householderQ() * MatrixXd::Identity(A.rows(),A.cols());
-                R = Q.transpose() * A;
+                MatrixXd Q = qr.householderQ() *
+                        MatrixXd::Identity(A.rows(),A.cols());
+                MatrixXd R = Q.transpose() * A;
                 MatrixXd::Index ind = N+offs;
                 MatrixXd R22 = R.block(ind,ind, N,N);
                 AA.block(n*N, 0, N, N) = R22;
@@ -317,16 +318,18 @@ void Fitting::fit(){
                         Q.block(0, ind, A.rows(), N).transpose() * b;
             }
 
-            VectorXd Escale = VectorXd::Zero(N);
+            RowVectorXd Escale = RowVectorXd::Zero(N);
             for (MatrixXd::Index col = 0; col < AA.cols(); ++col) {
                 Escale(col) = 1 / AA.col(col).norm();
                 AA.col(col) *= Escale(col);
             }
 
-            VectorXd xAux = AA.fullPivHouseholderQr(bb));
-            xAux *= Escale;
-            VectorXd x(N+1);
-            x.block(0,N) = xAux;
+            VectorXd xAux = AA.fullPivHouseholderQr().solve(bb);
+            for (VectorXd::Index i = 0; i < xAux.size(); ++i) {
+                xAux(i) *= Escale(i);
+            }
+
+            x.head(N) = xAux;
             x(N) = Dnew;
         }
 
