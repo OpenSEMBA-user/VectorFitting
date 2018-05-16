@@ -137,16 +137,9 @@ void Fitting::fit(){
         Real scale = 0.0;
         for (size_t m = 0; m < Nc; ++m) {
             for (size_t i = 0; i < Ns; ++i) {
-                Real weight;
-                if (weights_.size() > 0 && weights_[i].size() > 1) {
-                    weight = weights_[i](m);
-                } else if (weights_.size() > 0 && weights_[i].size() > 1) {
-                    weight = weights_[i](0);
-                } else {
-                    weight = 1.0;
-                }
                 const Complex sample = samples_[i].second[m];
-                scale += std::pow(std::abs(weight * std::conj(sample)), 2);
+                scale += std::pow(std::abs(
+                        useWeight_(i,m) * std::conj(sample)), 2);
             }
         }
         scale = std::sqrt(scale) / (Real) Ns;
@@ -172,20 +165,10 @@ void Fitting::fit(){
             VectorXd bb = VectorXd::Zero(Nc*(N+1));
             for (size_t n = 0; n < Nc; ++n) {
                 MatrixXd A = MatrixXd::Zero(2*Ns+1, (N+offs)+N+1);
-                VectorXd weig(Ns);
-                for (size_t i = 0; i < Ns; ++i) {
-                    if (weights_[i].size() > 1) {
-                        weig(i) = weights_[i](n);
-                    } else if (weights_[i].size() == 1) {
-                        weig(i) = weights_[i](0);
-                    } else {
-                        throw std::runtime_error("Invalid weight operation");
-                    }
-                }
                 // Left block.
                 for (size_t m = 0; m < N + offs; ++m) {
                     for (size_t i = 0; i < Ns; ++i) {
-                        const Complex entry = weig(i) * Dk(i,m);
+                        const Complex entry = useWeight_(i,n) * Dk(i,m);
                         A(i   ,m) = std::real(entry);
                         A(i+Ns,m) = std::imag(entry);
                     }
@@ -195,7 +178,7 @@ void Fitting::fit(){
                 for (size_t m = 0; m < N+1; ++m) {
                     for (size_t i = 0; i < Ns; ++i) {
                         const Complex entry =
-                         - weig(i) * Dk(i,m) * samples_[i].second[n];
+                         - useWeight_(i,n) * Dk(i,m) * samples_[i].second[n];
                         A(i   ,inda+m) = std::real(entry);
                         A(i+Ns,inda+m) = std::imag(entry);
                     }
@@ -235,7 +218,7 @@ void Fitting::fit(){
                 AA.col(col) *= Escale(col);
             }
 
-            x = AA.fullPivHouseholderQr().solve(bb);
+            x = AA.householderQr().solve(bb);
             for (size_t i = 0; i < N+1; ++i) {
                 x(i) *= Escale(i);
             }
@@ -250,7 +233,7 @@ void Fitting::fit(){
             if (!options_.isRelax()) {
                 Dnew = 1.0;
             } else {
-                if (equal(x(N), 0.0)) {
+                if (std::abs(x(N)) < toleranceLow_) {
                     Dnew = 1.0;
                 } else if (lower  (std::abs(x(N)), toleranceLow_)) {
                     std::signbit(x(N)) ?
@@ -263,34 +246,22 @@ void Fitting::fit(){
                 }
             }
 
-
             MatrixXd AA(Nc*N, N);
             VectorXd bb(Nc*N);
             for (size_t n = 0; n < Nc; ++n) {
-
-                VectorXd weig(Ns);
-                for (size_t i = 0; i < Ns; ++i) {
-                    if (weights_[i].size() > 1) {
-                        weig(i) = weights_[i](n);
-                    } else if (weights_[i].size() == 1) {
-                        weig(i) = weights_[i](0);
-                    } else {
-                        throw std::runtime_error("Invalid weight operation");
-                    }
-                }
 
                 MatrixXd A(2*Ns, N+offs+N);
                 {
                     for (size_t m = 0; m < N+offs; ++m) {
                         for (size_t i = 0; i < Ns; ++i) {
-                            A(i,m)     = std::real(weig(i) * Dk(i,m));
-                            A(i+Ns, m) = std::imag(weig(i) * Dk(i,m));
+                            A(i,m)     = std::real(useWeight_(i,n) * Dk(i,m));
+                            A(i+Ns, m) = std::imag(useWeight_(i,n) * Dk(i,m));
                         }
                     }
                     MatrixXd::Index inda = N + offs;
                     for (size_t m = 0; m < N; ++m) {
                         for (size_t i = 0; i < Ns; ++i) {
-                            Complex aux = - weig(i) *
+                            Complex aux = - useWeight_(i,n) *
                                     Dk(i,m) * std::conj(samples_[i].second(n));
                             A(i,    inda+m) = std::real(aux);
                             A(i+Ns, inda+m) = std::imag(aux);
@@ -300,8 +271,8 @@ void Fitting::fit(){
 
                 VectorXd b(2*Ns);
                 for (size_t i = 0; i < Ns; ++i) {
-                    Complex aux =
-                            Dnew * weig(i) * std::conj(samples_[i].second(n));
+                    Complex aux = Dnew *
+                            useWeight_(i,n) * std::conj(samples_[i].second(n));
                     b(i)    = std::real(aux);
                     b(i+Ns) = std::imag(aux);
                 }
@@ -324,7 +295,7 @@ void Fitting::fit(){
                 AA.col(col) *= Escale(col);
             }
 
-            VectorXd xAux = AA.fullPivHouseholderQr().solve(bb);
+            VectorXd xAux = AA.householderQr().solve(bb);
             for (VectorXd::Index i = 0; i < xAux.size(); ++i) {
                 xAux(i) *= Escale(i);
             }
@@ -333,10 +304,7 @@ void Fitting::fit(){
             x(N) = Dnew;
         }
 
-        VectorXcd C = VectorXcd::Zero(N); // Line 433
-        for (int i = 0; i < x.rows()-1; ++i) {
-            C(i) = x(i);
-        }
+        VectorXcd C = x.head(N).cast<Complex>(); // Line 433
         for (size_t m = 0; m < N; ++m) {
             if (cindex(m) == 1) {
                 const Real r1 = std::real(C(m  ));
@@ -345,7 +313,7 @@ void Fitting::fit(){
                 C(m+1) = Complex(r1, -r2);
             }
         }
-        Real D = x(x.rows()-1);
+        Real D = x(N);
 
         // Calculates the zeros for sigma. Line 481
         VectorXi B = VectorXi::Ones(N);
@@ -479,10 +447,10 @@ void Fitting::fit(){
                 if (cindex(m) == 0) {
                     Dk(i,m) = Complex(1,0) / (samples_[i].first - LAMBD(m));
                 } else if (cindex(m) == 1) {
-                    Dk(i,m)   = Complex(1,0) / (samples_[i].first - LAMBD(m))
-                                      + Complex(1,0) / (samples_[i].first - std::conj(LAMBD(m)));
-                    Dk(i,m+1) = Complex(0,1) / (samples_[i].first - LAMBD(m))
-                                      - Complex(0,1) / (samples_[i].first - std::conj(LAMBD(m)));
+                    Dk(i,m)   = Complex(1,0) / (samples_[i].first - LAMBD(m)) +
+                            Complex(1,0) / (samples_[i].first - std::conj(LAMBD(m)));
+                    Dk(i,m+1) = Complex(0,1) / (samples_[i].first - LAMBD(m)) -
+                            Complex(0,1) / (samples_[i].first - std::conj(LAMBD(m)));
                 }
             }
         }
@@ -504,10 +472,10 @@ void Fitting::fit(){
             }
             for (size_t i = 0; i < Ns; ++i) {
                 for (size_t j = 0; j < N; ++j) {
-                    A (i    ,j) =   std::real(Dk(i,j)) * weights_[i](n);
-                    A (i+Ns ,j) =   std::imag(Dk(i,j)) * weights_[i](n);
-                    BB(i)    = std::real(samples_[i].second(n)) * weights_[i](n);
-                    BB(i+Ns) = std::imag(samples_[i].second(n)) * weights_[i](n);
+                    A (i    ,j) =   std::real(Dk(i,j)) * useWeight_(i,n);
+                    A (i+Ns ,j) =   std::imag(Dk(i,j)) * useWeight_(i,n);
+                    BB(i)    = std::real(samples_[i].second(n)) * useWeight_(i,n);
+                    BB(i+Ns) = std::imag(samples_[i].second(n)) * useWeight_(i,n);
                 }
             }
             switch (options_.getAsymptoticTrend()) {
@@ -515,16 +483,16 @@ void Fitting::fit(){
                 break;
             case Options::AsymptoticTrend::constant:
                 for (size_t i = 0; i < Ns; ++i) {
-                    A(i,    N) = 1.0 * weights_[i](n);
-                    A(i+Ns, N) = 0.0 * weights_[i](n);
+                    A(i,    N) = 1.0 * useWeight_(i,n);
+                    A(i+Ns, N) = 0.0 * useWeight_(i,n);
                 }
                 break;
             case Options::AsymptoticTrend::linear:
                 for (size_t i = 0; i < Ns; ++i) {
-                    A(i,    N  ) = 1.0 * weights_[i](n);
-                    A(i+Ns, N  ) = 0.0 * weights_[i](n);
-                    A(i,    N+1) = std::real(samples_[i].first) * weights_[i](n);
-                    A(i+Ns, N+1) = std::imag(samples_[i].first) * weights_[i](n);
+                    A(i,    N  ) = 1.0 * useWeight_(i,n);
+                    A(i+Ns, N  ) = 0.0 * useWeight_(i,n);
+                    A(i,    N+1) = std::real(samples_[i].first) * useWeight_(i,n);
+                    A(i+Ns, N+1) = std::imag(samples_[i].first) * useWeight_(i,n);
                 }
                 break;
             }
@@ -538,7 +506,6 @@ void Fitting::fit(){
                 }
             }
 
-            //VectorXcd x = (A.transpose() * A).inverse() * A.transpose() * BB;
             MatrixXcd X = A.householderQr().solve(BB);
             for (int i = 0; i < A.cols(); ++i) {
                 X(i) /= Escale(i);

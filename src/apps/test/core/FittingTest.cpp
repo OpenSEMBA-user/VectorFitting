@@ -32,7 +32,8 @@ using namespace VectorFitting;
 using namespace std;
 
 class FittingTest : public ::testing::Test {
-
+protected:
+    Real tol_ = 1e-12;
 };
 
 TEST_F(FittingTest, ctor) {
@@ -617,6 +618,32 @@ TEST_F(FittingTest, basic) {
     Fitting fitting(samples, opts, poles, weights);
     fitting.fit();
 
-    // TODO
+    auto B = fitting.getB();
+    for (auto i = 0; i < B.size(); ++i) {
+        EXPECT_EQ(1, B(i));
+    }
+
+    auto C = fitting.getC();
+    for (auto i = 0; i < C.size(); ++i) {
+        EXPECT_NEAR(0.0, C(i).real(), tol_);
+        EXPECT_NEAR(0.0, C(i).imag(), tol_);
+    }
+
+    auto D = fitting.getD();
+    EXPECT_EQ(3, D.size());
+    EXPECT_NEAR(1.0, D(0).real(), tol_);
+    EXPECT_NEAR(2.0, D(1).real(), tol_);
+    EXPECT_NEAR(3.0, D(2).real(), tol_);
+    EXPECT_NEAR(0.0, D(0).imag(), tol_);
+    EXPECT_NEAR(0.0, D(1).imag(), tol_);
+    EXPECT_NEAR(0.0, D(2).imag(), tol_);
+
+    auto E = fitting.getE();
+    for (auto i = 0; i < E.size(); ++i) {
+        EXPECT_NEAR(0.0, E(i).real(), tol_);
+        EXPECT_NEAR(0.0, E(i).imag(), tol_);
+    }
+
+    EXPECT_NEAR(0.0, fitting.getRMSE(), tol_);
 
 }

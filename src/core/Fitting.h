@@ -125,8 +125,8 @@ private:
 
     std::vector<VectorXd> weights_; // Size: Ns, Nc
 
-    static constexpr Real toleranceLow_  = 1e-8;
-    static constexpr Real toleranceHigh_ = 1e+8;
+    static constexpr Real toleranceLow_  = 1e-4;
+    static constexpr Real toleranceHigh_ = 1e+4;
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;
@@ -148,8 +148,18 @@ private:
     } complexOrdering;
 
     // Quick check to see if a Complex number is real
-    bool isReal(Complex n){
+    static bool isReal(Complex n){
         return equal(n.imag(), 0.0);
+    }
+
+    Real useWeight_(size_t i, VectorXd::Index n) {
+        if (weights_[i].size() > 1) {
+            return weights_[i](n);
+        } else if (weights_[i].size() == 1) {
+            return weights_[i](0);
+        } else {
+            throw std::runtime_error("Invalid weight operation");
+        }
     }
 
 };
