@@ -584,7 +584,7 @@ TEST_F(FittingTest, paperSection4) {
 }
 
 
-TEST_F(FittingTest, basic) {
+TEST_F(FittingTest, constant) {
     const size_t Ns = 20;
 
     std::vector<Fitting::Sample> samples;

@@ -76,22 +76,20 @@ public:
     /**
      *  Getters and setters to fitting coefficents.
      */
-    MatrixXcd getA() {return A_;}    // Size:  N, N.
-    MatrixXcd getC() {return C_;}    // Size:  Nc, N.
-    VectorXi getB()  {return B_;}    // Size:  1, N.
-    VectorXcd getD() {return D_;}    // Size:  1, Nc.
-    VectorXcd getE() {return E_;}    // Size:  1, Nc.
+    const MatrixXcd& getA() const {return A_;}    // Size:  N, N.
+    const MatrixXcd& getC() const {return C_;}    // Size:  Nc, N.
+    const VectorXi& getB()  const {return B_;}    // Size:  1, N.
+    const VectorXcd& getD() const {return D_;}    // Size:  1, Nc.
+    const VectorXcd& getE() const {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
     Real getMaxDeviation() const;
 	const std::vector<Sample>& getSamples() const;
 
     Options& options() {return options_;};
 
-	void setA(const MatrixXcd& a) {A_ = a;}
-	void setB(const MatrixXi&  b) {B_ = b;}
-	void setC(const MatrixXcd& c) {C_ = c;}
-	void setD(const VectorXcd& d) {D_ = d;}
-	void setE(const VectorXcd& e) {E_ = e;}
+    size_t getSamplesSize() const;
+    size_t getResponseSize() const;
+    size_t getOrder() const;
 
     template <class T>
     static std::vector<T> toStdVector(
@@ -128,9 +126,6 @@ private:
     static constexpr Real toleranceLow_  = 1e-4;
     static constexpr Real toleranceHigh_ = 1e+4;
 
-    size_t getSamplesSize() const;
-    size_t getResponseSize() const;
-    size_t getOrder() const;
 
     static RowVectorXi getCIndex(const std::vector<Complex>& poles);
 

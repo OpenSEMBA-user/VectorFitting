@@ -132,7 +132,7 @@ private:
 	static std::vector<Fitting::Sample> calcFsum(
 	        const std::vector<Fitting::Sample>& f,
 	        const Options& options);
-	void tri2full(Fitting fitting);
+	void tri2full(const Fitting& fitting);
 
 };
 

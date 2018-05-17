@@ -55,7 +55,6 @@ Driver::Driver(
 
     Fitting fitting2(squeeze(samples), opts, poles, squeeze(weights));
     for (size_t i = 0; i < opts.getIterations().second; ++i) {
-
         if (i == opts.getIterations().second - 1) {
             fitting2.options().setSkipResidueIdentification(false);
         }
@@ -135,63 +134,51 @@ std::vector<Fitting::Sample> Driver::calcFsum(
 
 
 
-void Driver::tri2full(Fitting fitting){
+void Driver::tri2full(const Fitting& fitting) {
 
-	MatrixXcd A = fitting.getA();
-	VectorXcd E = fitting.getE();
-	MatrixXi  B = fitting.getB();
-	MatrixXcd C = fitting.getC();
-	VectorXcd D = fitting.getD();
-	const size_t N = A.cols();
+	const size_t N = fitting.getOrder();
 
 	size_t Nc;
 	{
         size_t tell = 0;
         for (size_t k = 0; k < 10000; ++k){
             tell += (k+1);
-            if (tell == (size_t) D.size()){
+            if (tell == (size_t) fitting.getD().size()){
                 Nc = (k+1);
                 break;
             }
         }
 	}
 
-	MatrixXcd AA;
-	MatrixXi BB;
-	MatrixXcd CC(Nc,Nc*N);
-	MatrixXcd DD(Nc,Nc);
-	MatrixXcd EE(Nc,Nc);
+    C_ = MatrixXcd::Zero(Nc,Nc*N);
+    D_ = MatrixXcd::Zero(Nc,Nc);
+    E_ = MatrixXcd::Zero(Nc,Nc);
 
-	size_t tell = 0;
+    size_t tell = 0;
 	for (size_t i = 0; i < Nc; ++i){
-		AA = blkdiag(AA, A);
-		BB = blkdiag(BB, B);
+		A_ = blkdiag(A_, fitting.getA());
+		MatrixXi auxB(fitting.getB());
+		B_ = blkdiag(B_, auxB);
 		for (size_t j = i; j < Nc; ++j){
-			DD(i,j) = D(tell);
-			EE(i,j) = E(tell);
+			D_(i,j) = fitting.getD()(tell);
+			E_(i,j) = fitting.getE()(tell);
 			if (i != j){
-				DD(j,i) = D(tell);
-				E(j,i) = E(tell);
+				D_(j,i) = fitting.getD()(tell);
+				E_(j,i) = fitting.getE()(tell);
 			}
 			for (size_t k = 0; k < i*N; ++k){
-				for (MatrixXcd::Index m = 0; m < C.cols(); ++m){
-					CC(i,j*N + k) = C(tell,m);
+				for (MatrixXcd::Index m = 0; m < N; ++m){
+					C_(i,j*N + k) = fitting.getC()(tell,m);
 				}
 			}
 			for (size_t l = 0; l < j*N; ++l){
-				for (MatrixXcd::Index m = 0; m < C.cols(); ++m){
-					CC(i,i*N + l) = C(tell,m);
+				for (MatrixXcd::Index m = 0; m < N; ++m){
+					C_(i,i*N + l) = fitting.getC()(tell,m);
 				}
 			}
 			tell++;
 		}
 	}
-
-	A_ = AA;
-	B_ = BB;
-	C_ = CC;
-	D_ = DD;
-	E_ = EE;
 
 }
 
