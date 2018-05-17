@@ -24,8 +24,6 @@
 
 #include "SpaceGenerator.h"
 
-#include <iostream>
-
 namespace VectorFitting {
 
 Fitting::Fitting(
@@ -369,46 +367,6 @@ void Fitting::fit(){
             }
         }
 
-//        // Sorterer polene s.a. de reelle kommer first.
-//        std::vector<Complex> complexPoles(N);
-//        for (size_t m = 0; m < N; ++m) {
-//            complexPoles[m] = roetter(m);
-//        }
-//        std::sort(complexPoles.begin(), complexPoles.end(), complexOrdering);
-//        std::reverse(complexPoles.begin(), complexPoles.end());
-//        for (size_t m = 0; m < N; ++m) {
-//            roetter(m) = complexPoles[m];
-//        }
-//
-//        for (size_t n = 0; n < N; ++n) {
-//            for (size_t m = n+1; m < N; ++m) {
-//                if (equal(std::imag(roetter(m)), 0.0) &&
-//                        !equal(std::imag(roetter(n)), 0.0)) {
-//                    Complex trans = roetter(n);
-//                    roetter(n) = roetter(m);
-//                    roetter(m) = trans;
-//                }
-//            }
-//        }
-//        size_t N1 = 0;
-//        for (size_t m = 0; m < N; ++m) {
-//            if (equal(std::imag(roetter(m)), 0.0)) {
-//                N1 = m+1;
-//            }
-//        }
-//        if (N1 < N) {
-//            std::vector<Complex> aux(N-N1);
-//            for (size_t m = N1; m < N; ++m) {
-//                aux[m-N1] = roetter(m);
-//            }
-//            std::sort(aux.begin(), aux.end(), complexOrdering);
-//            std::reverse(aux.begin(), aux.end());
-//            for (size_t m = N1; m < N; ++m) {
-//                roetter(m) = aux[m-N1];
-//            }
-//        }
-
-        // Alternative way of sorting.
         // First pure real poles in ascending order.
         // Then complex poles in ascending order by imaginary part.
         std::vector<Complex> aux(N);
@@ -620,18 +578,8 @@ std::vector<Fitting::Sample> Fitting::getFittedSamples() const {
 
     for (size_t n = 0; n < Nc; ++n) {
         fit.block(n,0,1,Ns) = (Dk * C_.block(n,0,1,N).transpose()).transpose();
-        switch (options_.getAsymptoticTrend()) {
-        case Options::AsymptoticTrend::zero:
-            break;
-        case Options::AsymptoticTrend::constant:
-            for (size_t i = 0; i < Ns; ++i) {
-                fit(n,i) += D_(n);
-            }
-            break;
-        case Options::AsymptoticTrend::linear:
-            for (size_t i = 0; i < Ns; ++i) {
-                fit(n,i) += D_(n) + samples_[i].first * E_(n);
-            }
+        for (size_t i = 0; i < Ns; ++i) {
+            fit(n,i) += D_(n) + samples_[i].first * E_(n);
         }
         for (size_t i = 0; i < Ns; ++i) {
             res[i].first = samples_[i].first;
@@ -654,30 +602,16 @@ Real Fitting::getRMSE() const {
     std::vector<Sample> fittedSamples = getFittedSamples();
 
     Real error = 0.0;
-    Complex actual, fitted, diff;
-
-    // Compute the error between the real responses and the fitted ones
-    for (size_t i = 0; i < getSamplesSize(); i++) {
-        if (!equal(samples_[i].first.real(), fittedSamples[i].first.real()) ||
-      		!equal(samples_[i].first.imag(), fittedSamples[i].first.imag()) ) {
-        	throw std::runtime_error(
-        			"Response should be on the same frequency");
-        }
-
-        // Iterate through all the responses in the vector of each sample
+    for (size_t i = 0; i < samples_.size(); i++) {
         for (VectorXcd::Index j = 0; j < samples_[i].second.size(); j++) {
-            // Retrieve the actual and fitted responses
-            actual = samples_[i].second[j];
-            fitted = fittedSamples[i].second[j];
-
-            diff = actual - fitted;
-
+            Complex actual = samples_[i].second[j];
+            Complex fitted = fittedSamples[i].second[j];
+            Complex diff = actual - fitted;
             error += abs(diff * diff);
         }
     }
 
-    Real res = sqrt(error/((Real)(getSamplesSize()*getResponseSize())));
-    return res;
+    return sqrt(error/((Real)(samples_.size() * samples_.size())));
 }
 
 Real Fitting::getMaxDeviation() const {

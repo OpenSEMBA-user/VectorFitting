@@ -129,43 +129,10 @@ TEST_F(DriverTest, constant){
 	EXPECT_EQ(1, driver.getB()(6,1));
 	EXPECT_EQ(1, driver.getB()(7,1));
 
-
-	EXPECT_NEAR(0.0, driver.getC()(0,0).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,1).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,2).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,3).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,4).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,5).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,6).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,7).real(), tol_);
-
-	EXPECT_NEAR(0.0, driver.getC()(0,0).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,1).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,2).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,3).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,4).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,5).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,6).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(0,7).imag(), tol_);
-
-	EXPECT_NEAR(0.0, driver.getC()(1,0).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,1).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,2).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,3).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,4).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,5).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,6).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,7).real(), tol_);
-
-	EXPECT_NEAR(0.0, driver.getC()(1,0).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,1).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,2).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,3).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,4).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,5).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,6).imag(), tol_);
-	EXPECT_NEAR(0.0, driver.getC()(1,7).imag(), tol_);
-
+	for (MatrixXcd::Index i = 0; i < driver.getC().size(); ++i) {
+	    EXPECT_NEAR(0.0, driver.getC()(i).real(), tol_);
+	    EXPECT_NEAR(0.0, driver.getC()(i).imag(), tol_);
+	}
 
 	EXPECT_FLOAT_EQ(1.0,driver.getD()(0,0).real());
 	EXPECT_FLOAT_EQ(2.0,driver.getD()(0,1).real());
@@ -178,11 +145,10 @@ TEST_F(DriverTest, constant){
 	EXPECT_FLOAT_EQ(0.0,driver.getD()(1,1).imag());
 
 
-	EXPECT_NEAR(0.0, driver.getE()(0,0).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getE()(0,1).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getE()(1,0).real(), tol_);
-	EXPECT_NEAR(0.0, driver.getE()(1,1).real(), tol_);
-
+    for (MatrixXcd::Index i = 0; i < driver.getE().size(); ++i) {
+        EXPECT_NEAR(0.0, driver.getE()(i).real(), tol_);
+        EXPECT_NEAR(0.0, driver.getE()(i).imag(), tol_);
+    }
 
 	auto R = driver.ss2pr().second;
 	for (size_t p = 0; p < R.size(); ++p) {
@@ -195,6 +161,9 @@ TEST_F(DriverTest, constant){
 	        }
 	    }
 	}
+
+
+	EXPECT_NEAR(0.0, driver.getRMSE(), tol_);
 
 }
 

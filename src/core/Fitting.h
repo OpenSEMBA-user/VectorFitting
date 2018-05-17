@@ -40,7 +40,7 @@ typedef std::complex<Real> Complex;
 
 
 class Fitting {
-
+    friend class Driver;
 public:
 	/**
 	 * Samples are formed by a pair formed by:
@@ -76,16 +76,15 @@ public:
     /**
      *  Getters and setters to fitting coefficents.
      */
-    const MatrixXcd& getA() const {return A_;}    // Size:  N, N.
-    const MatrixXcd& getC() const {return C_;}    // Size:  Nc, N.
-    const VectorXi& getB()  const {return B_;}    // Size:  1, N.
-    const VectorXcd& getD() const {return D_;}    // Size:  1, Nc.
-    const VectorXcd& getE() const {return E_;}    // Size:  1, Nc.
+    MatrixXcd getA() const {return A_;}    // Size:  N, N.
+    MatrixXcd getC() const {return C_;}    // Size:  Nc, N.
+    VectorXi getB()  const {return B_;}    // Size:  1, N.
+    VectorXcd getD() const {return D_;}    // Size:  1, Nc.
+    VectorXcd getE() const {return E_;}    // Size:  1, Nc.
     Real getRMSE() const;
     Real getMaxDeviation() const;
 	const std::vector<Sample>& getSamples() const;
 
-    Options& options() {return options_;};
 
     size_t getSamplesSize() const;
     size_t getResponseSize() const;
@@ -110,6 +109,8 @@ public:
         }
         return res;
     }
+
+    Options& options() {return options_;};
 
 private:
     Options options_;

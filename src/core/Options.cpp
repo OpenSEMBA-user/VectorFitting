@@ -26,18 +26,19 @@
 namespace VectorFitting {
 
 Options::Options() {
+    n_                         = 0;
+    nu_                        = 1e-3;
+    polesType_ 				   = PolesType::lincmplx;
+    iterations_.first 		   = 1;   // Initial poles.
+    iterations_.second   	   = 1;
+
     relax_                     = true;
     stable_                    = true;
     asymptoticTrend_           = AsymptoticTrend::constant;
-    polesType_ 				   = PolesType::lincmplx;
     weighting_                 = Weighting::one;
     skipPoleIdentification_    = false;
     skipResidueIdentification_ = false;
     complexSpaceState_         = true;
-    n_                         = 0;
-    nu_                        = 1e-3;
-    iterations_.first 		   = 4;
-    iterations_.second   	   = 1;
 }
 
 Options::~Options() {

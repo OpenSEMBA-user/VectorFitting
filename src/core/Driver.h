@@ -26,19 +26,13 @@
 
 #include <cmath>
 
-
-
-#include <iostream>
-
-
-
-
-
 namespace VectorFitting {
 
 using namespace Eigen;
 
 class Driver {
+    friend class VectorFitting::Fitting;
+    friend void VectorFitting::Options::setSkipPoleIdentification(bool);
 public:
     typedef std::pair<Complex, MatrixXcd> Sample;
 
@@ -49,16 +43,20 @@ public:
 	 * @param order     Order of approximation.
 	 * @param options   Options.
      */
-	Driver(std::vector<Driver::Sample> samples,
+	Driver(const std::vector<Sample>& samples,
            const Options& options,
            const std::vector<Complex>& poles = {},
            const std::vector<MatrixXd>& weights = {});
-	const MatrixXcd& getA() const;
-	const MatrixXi& getB() const;
-	const MatrixXcd& getC() const;
-	const MatrixXcd& getD() const;
-	const MatrixXcd& getE() const;
-	const std::vector<Fitting::Sample>& getSamples() const;
+	MatrixXcd getA() const;
+	MatrixXi  getB() const;
+	MatrixXcd getC() const;
+	MatrixXcd getD() const;
+	MatrixXcd getE() const;
+
+	std::vector<Sample> getFittedSamples() const;
+	std::vector<Sample> getSamples() const;
+
+	Real getRMSE() const;
 
 	std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr() const;
 
@@ -69,11 +67,12 @@ public:
 private:
 
 	MatrixXcd A_;
-	MatrixXi B_;
+	MatrixXi  B_;
 	MatrixXcd C_;
 	MatrixXcd D_;
 	MatrixXcd E_;
-	std::vector<Fitting::Sample> samples_;
+
+	std::vector<Driver::Sample> samples_;
 
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {

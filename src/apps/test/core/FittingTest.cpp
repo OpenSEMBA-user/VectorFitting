@@ -89,7 +89,6 @@ TEST_F(FittingTest, ex1) {
     opts.setRelax(true);
     opts.setStable(true);
     opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-    opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(false);
 
     Fitting fitting(samples, opts, poles);
@@ -350,7 +349,6 @@ TEST_F(FittingTest, ex2){
     opts.setRelax(true);
     opts.setStable(true);
     opts.setAsymptoticTrend(Options::AsymptoticTrend::linear);
-    opts.setSkipPoleIdentification(false);
     opts.setSkipResidueIdentification(true);
 
     const size_t nIter = 3;
