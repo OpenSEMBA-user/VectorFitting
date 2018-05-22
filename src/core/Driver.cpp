@@ -64,11 +64,11 @@ Driver::Driver(
 
 
 std::vector<Fitting::Sample> Driver::squeeze(
-        const std::vector<Driver::Sample>& samples){
-    std::vector<MatrixXcd> response;
-    for (size_t i = 0; i < samples.size(); ++i) {
-        response.push_back(samples[i].second);
-    }
+		const std::vector<Driver::Sample>& samples){
+	std::vector<MatrixXcd> response;
+	for (size_t i = 0; i < samples.size(); ++i) {
+		response.push_back(samples[i].second);
+	}
     std::vector<VectorXcd> squeezedResponse = squeeze(response);
 
     std::vector<Fitting::Sample> res;

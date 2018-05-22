@@ -21,8 +21,8 @@
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifndef SEMBA_MATH_FITTING_VECTOR_H_
-#define SEMBA_MATH_FITTING_VECTOR_H_
+#ifndef VECTOR_FITTING_FITTING_H_
+#define VECTOR_FITTING_FITTING_H_
 
 #include <vector>
 #include <complex>
@@ -162,4 +162,4 @@ private:
 
 } /* namespace VectorFitting */
 
-#endif // SEMBA_MATH_FITTING_VECTOR_H_
+#endif // VECTOR_FITTING_FITTING_H_

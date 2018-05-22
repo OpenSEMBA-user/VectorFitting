@@ -20,6 +20,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef VECTOR_FITTING_DRIVER_H_
+#define VECTOR_FITTING_DRIVER_H_
 
 #include "Fitting.h"
 #include "SpaceGenerator.h"
@@ -136,3 +138,5 @@ private:
 };
 
 } /* namespaceVectorFitting */
+
+#endif /*VECTOR_FITTING_DRIVER_H_ */
