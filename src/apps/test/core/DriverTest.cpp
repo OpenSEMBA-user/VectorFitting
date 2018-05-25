@@ -168,6 +168,64 @@ TEST_F(DriverTest, constant){
 
 }
 
+TEST_F(DriverTest, multilayer1) {
+    ifstream file("testData/multilayer_1_original_samples.txt");
+    EXPECT_TRUE(file.is_open());
+
+    std::vector<Driver::Sample> samples;
+    while (!file.eof()) {
+        double sReal, sImag;
+        file >> sReal >> sImag;
+        MatrixXcd z(2,2);
+        for (size_t i = 0; i < 4; ++i) {
+            double auxReal, auxImag;
+            file >> auxReal >> auxImag;
+            z(i) = {auxReal, auxImag};
+        }
+        samples.push_back({Complex(sReal, sImag), z});
+    }
+
+    {
+        Options options;
+        options.setIterations({1,1});
+        options.setN(2);
+
+        Driver driver(samples, options);
+
+        EXPECT_FLOAT_EQ(6.397311869800918e-05, driver.getRMSE());
+
+        auto pR = driver.ss2pr();
+        const std::vector<Complex>& poles = pR.first;
+        const std::vector<MatrixXcd>& R = pR.second;
+
+        EXPECT_EQ(2, poles.size());
+        EXPECT_FLOAT_EQ(-1.440853223867878E9, poles[0].real());
+        EXPECT_FLOAT_EQ(-0.007688890620345E9, poles[0].imag());
+
+        // TODO Compare R, A, B, C, D, E;
+    }
+
+    {
+        Options options;
+        options.setIterations({4,10});
+        options.setN(2);
+
+        Driver driver(samples, options);
+
+        EXPECT_FLOAT_EQ(6.397311869800918e-05, driver.getRMSE());
+
+        auto pR = driver.ss2pr();
+        const std::vector<Complex>& poles = pR.first;
+        const std::vector<MatrixXcd>& R = pR.second;
+
+        EXPECT_EQ(2, poles.size());
+        EXPECT_FLOAT_EQ(-1.440702837082726E9, poles[0].real());
+        EXPECT_FLOAT_EQ(-0.007688357841860E9, poles[0].imag());
+
+        // TODO Compare R, A, B, C, D, E;
+    }
+}
+
 TEST_F(DriverTest, ss2pr) {
     MatrixXcd A(8,8);
     A(0,0) = Complex(-5.394842153248248E9, 0.0);
