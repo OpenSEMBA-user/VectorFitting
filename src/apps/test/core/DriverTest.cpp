@@ -31,6 +31,7 @@ using namespace VectorFitting;
 using namespace std;
 
 class DriverTest : public ::testing::Test {
+    friend class Driver;
 protected:
 	const double tol_ = 1.5e-5;
 };
@@ -167,5 +168,51 @@ TEST_F(DriverTest, constant){
 
 }
 
+TEST_F(DriverTest, ss2pr) {
+    MatrixXcd A(8,8);
+    A(0,0) = Complex(-5.394842153248248E9, 0.0);
+    A(1,1) = Complex(-0.868071191079481E9, 0.0);
+    A(2,2) = Complex(-0.057328769608143E9, 0.0);
+    A(3,3) = Complex(-0.007676010396664E9, 0.0);
+    A(4,4) = Complex(-5.394842153248248E9, 0.0);
+    A(5,5) = Complex(-0.868071191079481E9, 0.0);
+    A(6,6) = Complex(-0.057328769608143E9, 0.0);
+    A(7,7) = Complex(-0.007676010396664E9, 0.0);
 
+    MatrixXi B(8,2);
+    B << 1, 0,
+         1, 0,
+         1, 0,
+         1, 0,
+         0, 1,
+         0, 1,
+         0, 1,
+         0, 1;
 
+    MatrixXcd C(2,8);
+    C << -5.114217225517887E9,  -0.154363881117109E9,  -0.000006319832630E9,  -0.000854717835836E9,  -0.000000778186644E9,   0.000000022447188E9, -0.000000000094385E9,   0.000000000023409E9,
+         -0.000000778186644E9,   0.000000022447188E9,  -0.000000000094385E9,   0.000000000023409E9,   0.019759228452776E9,  -0.001781334631323E9, -0.000009328428577E9,  -0.000000654789196E9;
+
+    auto pR = Driver::ss2pr_(A, B, C);
+    vector<Complex>& p = pR.first;
+    vector<MatrixXcd>& R = pR.second;
+
+    for (size_t i = 0; i < p.size(); ++i) {
+        EXPECT_FLOAT_EQ(0.0, p[i].imag());
+    }
+    EXPECT_FLOAT_EQ(-5.394842153248248E9, p[0].real());
+    EXPECT_FLOAT_EQ(-0.868071191079481E9, p[1].real());
+    EXPECT_FLOAT_EQ(-0.057328769608143E9, p[2].real());
+    EXPECT_FLOAT_EQ(-0.007676010396664E9, p[3].real());
+
+    vector<MatrixXcd> RKnown(1, MatrixXcd(2,2));
+    RKnown[0] << Complex(-5.114217225517887E9, 0.0), Complex(-0.000000778186644E9, 0.0),
+                 Complex(-0.000000778186644E9, 0.0), Complex( 0.019759228452776E9, 0.0);
+
+    for (size_t i = 0; i < RKnown.size(); ++i) {
+        for (auto j = 0; j < RKnown[i].size(); ++j) {
+            EXPECT_FLOAT_EQ(RKnown[i](j).real(), R[i](j).real());
+            EXPECT_FLOAT_EQ(RKnown[i](j).imag(), R[i](j).imag());
+        }
+    }
+}
