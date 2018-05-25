@@ -29,8 +29,8 @@ Options::Options() {
     n_                         = 0;
     nu_                        = 1e-3;
     polesType_ 				   = PolesType::lincmplx;
-    iterations_.first 		   = 1;   // Initial poles.
-    iterations_.second   	   = 1;
+    iterations_.first 		   = 4;   // Initial poles.
+    iterations_.second   	   = 4;
 
     relax_                     = true;
     stable_                    = true;

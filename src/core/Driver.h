@@ -33,6 +33,7 @@ namespace VectorFitting {
 using namespace Eigen;
 
 class Driver {
+    friend class DriverTest;
     friend class VectorFitting::Fitting;
     friend void VectorFitting::Options::setSkipPoleIdentification(bool);
 public:
@@ -62,10 +63,11 @@ public:
 
 	std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr() const;
 
-//protected:
-    static std::vector<Complex> buildPoles(
+	static std::vector<Complex> buildPoles(
             const std::pair<Real, Real>& range, const Options& opts);
 
+	static std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr_(
+	        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C);
 private:
 
 	MatrixXcd A_;
@@ -75,6 +77,7 @@ private:
 	MatrixXcd E_;
 
 	std::vector<Driver::Sample> samples_;
+
 
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
