@@ -399,7 +399,7 @@ TEST_F(FittingTest, ex2){
 TEST_F(FittingTest, ex4a){
 
     // Reads raw data from file.
-    ifstream file("testData/fdne.txt");
+    ifstream file("./testData/fdne.txt");
     EXPECT_TRUE(file.is_open());
     size_t Nc, Ns;
     file >> Nc >> Ns;

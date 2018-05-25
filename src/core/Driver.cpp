@@ -182,17 +182,12 @@ std::pair<std::vector<Complex>, std::vector<MatrixXcd>> Driver::ss2pr() const {
 	std::vector<MatrixXcd> R;
 	for (size_t i = 0; i < N; ++i){
 		MatrixXcd Raux = MatrixXcd::Zero(Nr,Nr);
-		std::vector<Complex> aux(N);
 		for (size_t j = 0; j < Nr; ++j){
 			const size_t ind = j*N + i;
 			for (size_t k = 0; k < Nr; ++k){
-				aux[i] += ((Complex) C_(k,ind)) * ((double) B_(ind,k));
+				Raux(j,k) += (Complex) C_(k,ind) * (double) B_(ind,k);
 			}
 		}
-		Raux(0,0) = aux[0];
-		Raux(0,1) = aux[1];
-		Raux(1,0) = aux[2];
-		Raux(1,1) = aux[3];
 		R.push_back(Raux);
  	}
 
