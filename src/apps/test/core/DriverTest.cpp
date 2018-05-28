@@ -225,6 +225,7 @@ TEST_F(DriverTest, multilayer1) {
         }
         samples.push_back({Complex(sReal, sImag), z});
     }
+    EXPECT_EQ(10000, samples.size());
 
     Options opts;
     opts.setIterations({4,10});
@@ -248,9 +249,9 @@ TEST_F(DriverTest, multilayer1) {
         Driver driver(samples, opts2);
 
         MatrixXcd A = driver.getA();
-        EXPECT_FLOAT_EQ(-1.471496117333204E9, A(0,0).real());
+        EXPECT_FLOAT_EQ(-0.008222358526517E9, A(0,0).real());
         EXPECT_FLOAT_EQ(0.0,                  A(0,0).imag());
-        EXPECT_FLOAT_EQ(-0.008222358526517E9, A(1,1).real());
+        EXPECT_FLOAT_EQ(-1.471496117333204E9, A(1,1).real());
         EXPECT_FLOAT_EQ(0.0,                  A(1,1).imag());
     }
 
@@ -260,9 +261,9 @@ TEST_F(DriverTest, multilayer1) {
         Driver driver(samples, opts2);
 
         MatrixXcd A = driver.getA();
-        EXPECT_FLOAT_EQ(-1.420727251184977E9, A(0,0).real());
+        EXPECT_FLOAT_EQ(-0.007693064166528E9, A(0,0).real());
         EXPECT_FLOAT_EQ(0.0,                  A(0,0).imag());
-        EXPECT_FLOAT_EQ(-0.007693064166528E9, A(1,1).real());
+        EXPECT_FLOAT_EQ(-1.420727251184977E9, A(1,1).real());
         EXPECT_FLOAT_EQ(0.0,                  A(1,1).imag());
     }
 
@@ -292,8 +293,10 @@ TEST_F(DriverTest, multilayer1) {
     const std::vector<MatrixXcd>& R = pR.second;
 
     EXPECT_EQ(2, poles.size());
-    EXPECT_FLOAT_EQ(-1.440702837082726E9, poles[0].real());
-    EXPECT_FLOAT_EQ(-0.007688357841860E9, poles[0].imag());
+    EXPECT_FLOAT_EQ(-0.007688357841860E9, poles[0].real());
+    EXPECT_FLOAT_EQ( 0.0,                 poles[0].imag());
+    EXPECT_FLOAT_EQ(-1.440702837082726E9, poles[1].real());
+    EXPECT_FLOAT_EQ( 0.0,                 poles[1].imag());
 
 
     ifstream file2("./testData/matrixA.txt");

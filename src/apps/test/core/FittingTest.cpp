@@ -646,29 +646,48 @@ TEST_F(FittingTest, constant) {
 
 }
 
-//TEST_F(FittingTest, polesWithSqueezedSum) {
-//    ifstream file("testData/multilayer_1_squeezedSum.txt");
-//    std::vector<Fitting::Sample> samples;
-//    while (!file.eof()) {
-//        Real sRe, sIm, fRe, fIm;
-//        file >> sRe >> sIm >> fRe >> fIm;
-//        samples.push_back(Fitting::Sample({sRe, sIm}, {{fRe, fIm}}));
-//    }
-//
-//    Options opts;
-//
-//    std::vector<Complex> poles;
-//    poles.push_back({-0.002513274122872E8, - 2.513274122871835E8});
-//    poles.push_back({-0.002513274122872E8, + 2.513274122871835E8});
-//
-//
-//
-//    Fitting fitting(samples, opts, poles);
-//    fitting.fit();
-//
-//    EXPECT_FLOAT_EQ(-1.471496117333204E9, fitting.getPoles()[0].real());
-//    EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[0].imag());
-//    EXPECT_FLOAT_EQ(-0.008222358526517E9, fitting.getPoles()[1].real());
-//    EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[1].imag());
-//
-//}
+TEST_F(FittingTest, polesWithSqueezedSum) {
+    ifstream file("testData/multilayer_1_squeezedSum.txt");
+    std::vector<Fitting::Sample> samples;
+    while (!file.eof()) {
+        Real sRe, sIm, fRe, fIm;
+        file >> sRe >> sIm >> fRe >> fIm;
+        Complex s(sRe, sIm);
+        VectorXcd response(1);
+        response(0) = Complex(fRe, fIm);
+        samples.push_back(Fitting::Sample(s, response));
+    }
+    EXPECT_EQ(10000, samples.size());
+
+    Options opts;
+
+    std::vector<Complex> poles;
+    poles.push_back({-0.002513274122872E8, - 2.513274122871835E8});
+    poles.push_back({-0.002513274122872E8, + 2.513274122871835E8});
+
+    // With 1 iteration.
+    {
+        Fitting fitting(samples, opts, poles);
+        fitting.fit();
+
+        EXPECT_FLOAT_EQ(-0.008222358526517E9, fitting.getPoles()[0].real());
+        EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[0].imag());
+        EXPECT_FLOAT_EQ(-1.471496117333204E9, fitting.getPoles()[1].real());
+        EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[1].imag());
+    }
+
+    // With 4 iterations.
+    {
+        Fitting fitting(samples, opts, poles);
+        for (size_t i = 0; i < 4; ++i) {
+                fitting.fit();
+        }
+
+        EXPECT_FLOAT_EQ(-0.007693064166528E9, fitting.getPoles()[0].real());
+        EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[0].imag());
+        EXPECT_FLOAT_EQ(-1.420727251184977E9, fitting.getPoles()[1].real());
+        EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[1].imag());
+    }
+
+
+}
