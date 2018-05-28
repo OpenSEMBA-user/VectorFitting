@@ -47,9 +47,11 @@ Driver::Driver(
     }
 
     std::vector<Fitting::Sample> squeezedSum = calcFsum(squeeze(samples_), opts);
-    Fitting fitting1(squeezedSum, opts, poles, squeeze(weights));
+    std::vector<VectorXd> squeezedWeights = squeeze(weights);
+    Fitting fitting1(squeezedSum, opts, poles, squeezedWeights);
     for (size_t i = 0; i < opts.getIterations().first; ++i) {
         fitting1.fit();
+        poles = fitting1.getPoles();
     }
 
     Fitting fitting2(squeeze(samples_), opts, poles, squeeze(weights));
@@ -59,7 +61,14 @@ Driver::Driver(
         }
         fitting2.fit();
     }
-    tri2full(fitting2);
+
+    if (opts.getIterations() == std::pair<size_t,size_t>(0,0)) {
+        throw std::runtime_error("No iterations to perform");
+    } else if (opts.getIterations().second == 0) {
+        tri2full(fitting1);
+    } else {
+        tri2full(fitting2);
+    }
 }
 
 

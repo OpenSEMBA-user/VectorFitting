@@ -645,3 +645,30 @@ TEST_F(FittingTest, constant) {
     EXPECT_NEAR(0.0, fitting.getRMSE(), tol_);
 
 }
+
+TEST_F(FittingTest, polesWithSqueezedSum) {
+    ifstream file("testData/multilayer_1_squeezedSum.txt");
+    std::vector<Fitting::Sample> samples;
+    while (!file.eof()) {
+        Real sRe, sIm, fRe, fIm;
+        file >> sRe >> sIm >> fRe >> fIm;
+        samples.push_back(Fitting::Sample({sRe, sIm}, {{fRe, fIm}});
+    }
+
+    Options opts;
+
+    std::vector<Complex> poles;
+    poles.push_back({-0.002513274122872E8, - 2.513274122871835E8});
+    poles.push_back({-0.002513274122872E8, + 2.513274122871835E8});
+
+
+
+    Fitting fitting(samples, opts, poles);
+    fitting.fit();
+
+    EXPECT_FLOAT_EQ(-1.471496117333204E9, fitting.getPoles()[0].real());
+    EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[0].imag());
+    EXPECT_FLOAT_EQ(-0.008222358526517E9, fitting.getPoles()[1].real());
+    EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[1].imag());
+
+}

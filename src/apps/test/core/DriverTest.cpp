@@ -170,6 +170,45 @@ TEST_F(DriverTest, constant){
 
 }
 
+TEST_F(DriverTest, multilayer1_iterations11) {
+    ifstream file("testData/multilayer_1_original_samples.txt");
+    EXPECT_TRUE(file.is_open());
+
+    std::vector<Driver::Sample> samples;
+    while (!file.eof()) {
+        double sReal, sImag;
+        file >> sReal >> sImag;
+        MatrixXcd z(2,2);
+        for (size_t i = 0; i < 4; ++i) {
+            double auxReal, auxImag;
+            file >> auxReal >> auxImag;
+            z(i) = {auxReal, auxImag};
+        }
+        samples.push_back({Complex(sReal, sImag), z});
+    }
+
+    Options options;
+    options.setIterations({1,1});
+    options.setN(2);
+
+    Driver driver(samples, options);
+
+    EXPECT_FLOAT_EQ(6.397311869800918e-05, driver.getRMSE());
+
+    auto pR = driver.ss2pr();
+    const std::vector<Complex>& poles = pR.first;
+    const std::vector<MatrixXcd>& R = pR.second;
+
+    EXPECT_EQ(2, poles.size());
+    EXPECT_FLOAT_EQ(-1.440853223867878E9, poles[0].real());
+    EXPECT_FLOAT_EQ(-0.007688890620345E9, poles[0].imag());
+
+
+
+    // TODO Compare R, A, B, C, D, E;
+
+}
+
 TEST_F(DriverTest, multilayer1) {
     ifstream file("testData/multilayer_1_original_samples.txt");
     EXPECT_TRUE(file.is_open());
@@ -187,152 +226,159 @@ TEST_F(DriverTest, multilayer1) {
         samples.push_back({Complex(sReal, sImag), z});
     }
 
+    Options opts;
+    opts.setIterations({4,10});
+    opts.setN(2);
+
+    // Checks initial poles.
     {
-        Options options;
-        options.setIterations({1,1});
-        options.setN(2);
+        std::vector<Complex> poles = Driver::buildPoles(
+                std::make_pair(samples.front().first.imag(),
+                        samples.back().first.imag()), opts);
+        EXPECT_FLOAT_EQ(-0.002513274122872E8, poles[0].real());
+        EXPECT_FLOAT_EQ(-2.513274122871835E8, poles[0].imag());
+        EXPECT_FLOAT_EQ(-0.002513274122872E8, poles[1].real());
+        EXPECT_FLOAT_EQ(+2.513274122871835E8, poles[1].imag());
+    }
 
-        Driver driver(samples, options);
+    // Checks poles created by the initial iterations.
+    {
+        Options opts2(opts);
+        opts2.setIterations({1,0});
+        Driver driver(samples, opts2);
 
-        EXPECT_FLOAT_EQ(6.397311869800918e-05, driver.getRMSE());
+        MatrixXcd A = driver.getA();
+        EXPECT_FLOAT_EQ(-1.471496117333204E9, A(0,0).real());
+        EXPECT_FLOAT_EQ(0.0,                  A(0,0).imag());
+        EXPECT_FLOAT_EQ(-0.008222358526517E9, A(1,1).real());
+        EXPECT_FLOAT_EQ(0.0,                  A(1,1).imag());
+    }
 
-        auto pR = driver.ss2pr();
-        const std::vector<Complex>& poles = pR.first;
-        const std::vector<MatrixXcd>& R = pR.second;
+    {
+        Options opts2(opts);
+        opts2.setIterations({4,0});
+        Driver driver(samples, opts2);
 
-        EXPECT_EQ(2, poles.size());
-        EXPECT_FLOAT_EQ(-1.440853223867878E9, poles[0].real());
-        EXPECT_FLOAT_EQ(-0.007688890620345E9, poles[0].imag());
+        MatrixXcd A = driver.getA();
+        EXPECT_FLOAT_EQ(-1.420727251184977E9, A(0,0).real());
+        EXPECT_FLOAT_EQ(0.0,                  A(0,0).imag());
+        EXPECT_FLOAT_EQ(-0.007693064166528E9, A(1,1).real());
+        EXPECT_FLOAT_EQ(0.0,                  A(1,1).imag());
+    }
+
+    // Full test.
+    Driver driver(samples, opts);
+
+    EXPECT_EQ(2, driver.getA().rows());
+    EXPECT_EQ(2, driver.getA().cols());
+
+    EXPECT_EQ(4, driver.getB().rows());
+    EXPECT_EQ(2, driver.getB().cols());
+
+    EXPECT_EQ(2, driver.getC().rows());
+    EXPECT_EQ(4, driver.getC().cols());
+
+    EXPECT_EQ(2, driver.getD().rows());
+    EXPECT_EQ(2, driver.getD().cols());
+
+    EXPECT_EQ(2, driver.getE().rows());
+    EXPECT_EQ(2, driver.getE().cols());
 
 
+    EXPECT_FLOAT_EQ(6.397311869800918e-05, driver.getRMSE());
 
-        // TODO Compare R, A, B, C, D, E;
+    auto pR = driver.ss2pr();
+    const std::vector<Complex>& poles = pR.first;
+    const std::vector<MatrixXcd>& R = pR.second;
+
+    EXPECT_EQ(2, poles.size());
+    EXPECT_FLOAT_EQ(-1.440702837082726E9, poles[0].real());
+    EXPECT_FLOAT_EQ(-0.007688357841860E9, poles[0].imag());
 
 
+    ifstream file2("testData/matrixA.txt");
+    EXPECT_TRUE(file2.is_open());
+    while(!file2.eof()){
+        Complex aComponent;
+        for (size_t i = 0; i < poles.size(); ++i){
+            for (size_t j = 0; j < poles.size();++j){
+                file2 >> aComponent;
+                EXPECT_FLOAT_EQ(aComponent.real(), driver.getA()(i,j).real());
+                EXPECT_FLOAT_EQ(aComponent.imag(), driver.getA()(i,j).imag());
+            }
+        }
+    }
+
+    ifstream file3("testData/matrixB.txt");
+    EXPECT_TRUE(file3.is_open());
+    while(!file3.eof()){
+        int bComponent;
+        for (size_t i = 0; i < 4; ++i){
+            for (size_t j = 0; j < 2;++j){
+                file3 >> bComponent;
+                EXPECT_FLOAT_EQ(bComponent, driver.getB()(i,j));
+
+            }
+        }
+    }
+
+    ifstream file4("testData/matrixC.txt");
+    EXPECT_TRUE(file4.is_open());
+    while(!file4.eof()){
+        Complex cComponent;
+        for (size_t i = 0; i < 2; ++i){
+            for (size_t j = 0; j < 4;++j){
+                file4 >> cComponent;
+                EXPECT_FLOAT_EQ(cComponent.real(), driver.getC()(i,j).real());
+                EXPECT_FLOAT_EQ(cComponent.imag(), driver.getC()(i,j).imag());
+            }
+        }
     }
 
 
-
-    {
-        Options options;
-        options.setIterations({4,10});
-        options.setN(2);
-
-        Driver driver(samples, options);
-
-        EXPECT_EQ(2, driver.getA().rows());
-        EXPECT_EQ(2, driver.getA().cols());
-
-        EXPECT_EQ(4, driver.getB().rows());
-        EXPECT_EQ(2, driver.getB().cols());
-
-        EXPECT_EQ(2, driver.getC().rows());
-        EXPECT_EQ(4, driver.getC().cols());
-
-        EXPECT_EQ(2, driver.getD().rows());
-        EXPECT_EQ(2, driver.getD().cols());
-
-        EXPECT_EQ(2, driver.getE().rows());
-        EXPECT_EQ(2, driver.getE().cols());
-
-
-        EXPECT_FLOAT_EQ(6.397311869800918e-05, driver.getRMSE());
-
-        auto pR = driver.ss2pr();
-        const std::vector<Complex>& poles = pR.first;
-        const std::vector<MatrixXcd>& R = pR.second;
-
-        EXPECT_EQ(2, poles.size());
-        EXPECT_FLOAT_EQ(-1.440702837082726E9, poles[0].real());
-        EXPECT_FLOAT_EQ(-0.007688357841860E9, poles[0].imag());
-
-
-        ifstream file2("testData/matrix_A.txt");
-        EXPECT_TRUE(file2.is_open());
-        while(!file2.eof()){
-        	Complex aComponent;
-        	for (size_t i = 0; i < poles.size(); ++i){
-        		for (size_t j = 0; j < poles.size();++j){
-        			file2 >> aComponent;
-        			EXPECT_FLOAT_EQ(aComponent.real(), driver.getA()(i,j).real());
-        			EXPECT_FLOAT_EQ(aComponent.imag(), driver.getA()(i,j).imag());
-        		}
-        	}
+    ifstream file5("testData/matrixD.txt");
+    EXPECT_TRUE(file5.is_open());
+    while(!file5.eof()){
+        Complex dComponent;
+        for (size_t i = 0; i < 2; ++i){
+            for (size_t j = 0; j < 2;++j){
+                file5 >> dComponent;
+                EXPECT_FLOAT_EQ(dComponent.real(), driver.getD()(i,j).real());
+                EXPECT_FLOAT_EQ(dComponent.imag(), driver.getD()(i,j).imag());
+            }
         }
+    }
 
-        ifstream file3("matrix_B.txt");
-        EXPECT_TRUE(file3.is_open());
-        while(!file3.eof()){
-        	int bComponent;
-        	for (size_t i = 0; i < 4; ++i){
-        		for (size_t j = 0; j < 2;++j){
-        			file3 >> bComponent;
-        			EXPECT_FLOAT_EQ(bComponent, driver.getB()(i,j));
-
-        		}
-        	}
+    ifstream file6("testData/matrixE.txt");
+    EXPECT_TRUE(file6.is_open());
+    while(!file6.eof()){
+        Complex eComponent;
+        for (size_t i = 0; i < 2; ++i){
+            for (size_t j = 0; j < 2;++j){
+                file6 >> eComponent;
+                EXPECT_FLOAT_EQ(eComponent.real(), driver.getE()(i,j).real());
+                EXPECT_FLOAT_EQ(eComponent.imag(), driver.getE()(i,j).imag());
+            }
         }
+    }
 
-        ifstream file4("matrix_C.txt");
-        EXPECT_TRUE(file4.is_open());
-        while(!file4.eof()){
-        	Complex cComponent;
-        	for (size_t i = 0; i < 2; ++i){
-        		for (size_t j = 0; j < 4;++j){
-        			file4 >> cComponent;
-        			EXPECT_FLOAT_EQ(cComponent.real(), driver.getC()(i,j).real());
-        			EXPECT_FLOAT_EQ(cComponent.imag(), driver.getC()(i,j).imag());
-        		}
-        	}
+    EXPECT_EQ(2, R.size());
+    EXPECT_EQ(2, R[0].rows());
+    EXPECT_EQ(2, R[0].cols());
+
+    ifstream file7("testData/matrixR.txt");
+    EXPECT_TRUE(file7.is_open());
+    while(!file7.eof()){
+        Complex rComponent;
+        for (size_t k = 0; k < poles.size(); ++k){
+            for (size_t i = 0; i < 2; ++i){
+                for (size_t j = 0; j < 2;++j){
+                    file7 >> rComponent;
+                    EXPECT_FLOAT_EQ(rComponent.real(), R[k](i,j).real());
+                    EXPECT_FLOAT_EQ(rComponent.imag(), R[k](i,j).imag());
+                }
+            }
         }
-
-
-        ifstream file5("matrix_D.txt");
-        EXPECT_TRUE(file5.is_open());
-        while(!file5.eof()){
-        	Complex dComponent;
-        	for (size_t i = 0; i < 2; ++i){
-        		for (size_t j = 0; j < 2;++j){
-        			file5 >> dComponent;
-        			EXPECT_FLOAT_EQ(dComponent.real(), driver.getD()(i,j).real());
-        			EXPECT_FLOAT_EQ(dComponent.imag(), driver.getD()(i,j).imag());
-        		}
-        	}
-        }
-
-        ifstream file6("matrix_E.txt");
-        EXPECT_TRUE(file6.is_open());
-        while(!file6.eof()){
-        	Complex eComponent;
-        	for (size_t i = 0; i < 2; ++i){
-        		for (size_t j = 0; j < 2;++j){
-        			file6 >> eComponent;
-        			EXPECT_FLOAT_EQ(eComponent.real(), driver.getE()(i,j).real());
-        			EXPECT_FLOAT_EQ(eComponent.imag(), driver.getE()(i,j).imag());
-        		}
-        	}
-        }
-
-        EXPECT_EQ(2, R.size());
-        EXPECT_EQ(2, R[0].rows());
-        EXPECT_EQ(2, R[0].cols());
-
-        ifstream file7("matrix_R.txt");
-        EXPECT_TRUE(file7.is_open());
-        while(!file7.eof()){
-        	Complex rComponent;
-        	for (size_t k = 0; k < poles.size(); ++k){
-        		for (size_t i = 0; i < 2; ++i){
-        			for (size_t j = 0; j < 2;++j){
-        				file7 >> rComponent;
-        				EXPECT_FLOAT_EQ(rComponent.real(), R[k](i,j).real());
-        				EXPECT_FLOAT_EQ(rComponent.imag(), R[k](i,j).imag());
-        			}
-        		}
-        	}
-        }
-
-
     }
 }
 
