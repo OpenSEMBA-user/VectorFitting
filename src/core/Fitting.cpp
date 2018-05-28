@@ -396,7 +396,7 @@ void Fitting::fit(){
         }
 
         if (N1 < N){
-        	std::sort(aux.begin()+(N1+1), aux.begin()+N, complexOrdering);
+        	std::sort(aux.begin() + N1, aux.begin() + N, complexOrdering);
         }
 
         for (size_t i = 0; i < aux.size(); ++i){
