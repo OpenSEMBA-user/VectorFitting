@@ -310,11 +310,12 @@ TEST_F(DriverTest, multilayer1) {
 
     ifstream file3("./testData/matrixB.txt");
     EXPECT_TRUE(file3.is_open());
-    for (size_t i = 0; i < driver.getB().rows(); ++i){
-    	for (size_t j = 0; j < driver.getB().cols();++j){
-    		int bComponent;
+    MatrixXi B = driver.getB();
+    for (MatrixXi::Index i = 0; i < B.rows(); ++i) {
+    	for (MatrixXi::Index j = 0; j < B.cols(); ++j) {
+    		double bComponent;
     		file3 >> bComponent;
-    		EXPECT_FLOAT_EQ(bComponent, driver.getB()(i,j));
+    		EXPECT_EQ((int) bComponent, B(i,j));
 
     	}
     }
