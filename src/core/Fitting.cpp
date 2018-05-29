@@ -369,57 +369,58 @@ void Fitting::fit(){
 
         // First pure real poles in ascending order.
         // Then complex poles in ascending order by imaginary part.
-
-        // lines 508 - 524
-
-        for (size_t m = 0; m < N; ++ m){
-        	for (size_t n = m+1; n < N; ++ n){
-        		if (roetter(n).imag() == 0.0 && roetter(m).imag() != 0.0){
-        			Complex aux = roetter(m);
-        			roetter(m)= roetter(n);
-        			roetter(n) = aux;
-        		}
-        	}
-        }
-
-        size_t N1 = 0;
-        for (size_t m = 0; m < N; ++m){
-        	if (roetter(m).imag() == 0){
-        		N1 = m;
-        	}
-        }
-
-        std::vector<Complex> aux;
-
-        for (size_t i = 0; i < roetter.size(); ++i){
-        	aux.push_back(roetter(i));
-        }
-
-        if (N1 < N){
-        	std::sort(aux.begin() + N1, aux.begin() + N, complexOrdering);
-        }
-
-        for (size_t i = 0; i < aux.size(); ++i){
-        	roetter(i) = aux[i] - 2.0 * Complex(0.0, 1.0) * aux[i].imag();
-        }
-
-
-//        std::vector<Complex> aux(N);
-//        for (size_t m = 0; m < N; ++m) {
-//            aux[m] = Complex(std::abs(std::imag(roetter(m))),
-//                             std::abs(std::real(roetter(m))));
+//        // lines 508 - 524
+//
+//        for (size_t m = 0; m < N; ++m){
+//        	for (size_t n = m+1; n < N; ++n){
+//        		if (equal(roetter(n).imag(), 0.0) &&
+//        		        !equal(roetter(m).imag(), 0.0)){
+//        			Complex aux = roetter(m);
+//        			roetter(m)= roetter(n);
+//        			roetter(n) = aux;
+//        		}
+//        	}
 //        }
-//        std::sort(aux.begin(), aux.end(), complexOrdering);
+//
+//        size_t N1 = 0;
 //        for (size_t m = 0; m < N; ++m) {
-//            if (equal(aux[m].real(), 0.0)) {
-//                roetter(m) = Complex(-std::imag(aux[m]), std::real(aux[m]));
-//            } else {
-//                roetter(m) = Complex(-std::imag(aux[m]), std::real(aux[m]));
-//                m++;
-//                roetter(m) = Complex(-std::imag(aux[m]), -std::real(aux[m]));
-//            }
+//        	if (equal(roetter(m).imag(), 0.0)) {
+//        		N1 = m;
+//        	}
+//        }
+//
+//        std::vector<Complex> aux;
+//
+//        for (auto i = 0; i < roetter.size(); ++i) {
+//        	aux.push_back(roetter(i));
+//        }
+//
+//        if (N1 < N) {
+//        	std::sort(aux.begin() + N1, aux.begin() + N, complexOrdering);
+//        }
+//
+//        for (size_t i = 0; i < aux.size(); ++i) {
+//        	roetter(i) = aux[i] - 2.0 * Complex(0.0, 1.0) * aux[i].imag();
 //        }
 
+
+        std::vector<Real> auxReal;
+        std::vector<Complex> auxComplex;
+        for (size_t m = 0; m < N; ++m) {
+            if (equal(roetter(m).imag(), 0.0)) {
+                auxReal.push_back(roetter(m).real());
+            } else {
+                auxComplex.push_back(roetter(m));
+            }
+        }
+        std::sort(auxReal.begin(), auxReal.end());
+        std::sort(auxComplex.begin(), auxComplex.end(), complexOrdering);
+        for (size_t m = 0; m < auxReal.size(); ++m) {
+            roetter(m) = auxReal[m];
+        }
+        for (size_t m = 0; m < auxComplex.size(); ++m) {
+            roetter(m + auxReal.size()) = auxComplex[m];
+        }
         // Stores results for poles.
         SERA = roetter;
 

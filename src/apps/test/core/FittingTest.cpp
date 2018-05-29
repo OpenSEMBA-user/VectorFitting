@@ -98,8 +98,9 @@ TEST_F(FittingTest, ex1) {
     vector<Complex> obtainedPoles = fitting.getPoles();
     vector<Complex> gustavssenPoles = {
             Complex(-5.00000000000118,    0.0           ),
-            Complex(-100.000000000017, +499.999999999981),
-            Complex(-100.000000000017, -499.999999999981)};
+            Complex(-100.000000000017, -499.999999999981),
+            Complex(-100.000000000017, +499.999999999981)
+            };
     EXPECT_EQ(gustavssenPoles.size(), obtainedPoles.size());
     for (size_t i = 0; i < gustavssenPoles.size(); ++i) {
         EXPECT_NEAR(gustavssenPoles[i].real(), obtainedPoles[i].real(), 1e-6);
@@ -110,8 +111,8 @@ TEST_F(FittingTest, ex1) {
     MatrixXcd obtainedResidues = fitting.getC();
     MatrixXcd gustavssenResidues(1,3);
     gustavssenResidues(0,0)= Complex( 2.0000,   0.0   );
-    gustavssenResidues(0,1)= Complex(30.0000, +40.0000);
-    gustavssenResidues(0,2)= Complex(30.0000, -40.0000);
+    gustavssenResidues(0,1)= Complex(30.0000, -40.0000);
+    gustavssenResidues(0,2)= Complex(30.0000, +40.0000);
 
     EXPECT_EQ(gustavssenResidues.rows(), obtainedResidues.rows());
     EXPECT_EQ(gustavssenResidues.cols(), obtainedResidues.cols());
@@ -368,24 +369,25 @@ TEST_F(FittingTest, ex2){
 
     // Compares with Gustavssen's poles.
     vector<Complex> gusPoles = {
-        Complex( - 2.827433388231069e+04, + 0.0                  ),
         Complex( - 2.576105975943579e+05, + 0.0                  ),
-        Complex( - 6.283185307179983e+02, + 3.141592653589790e+04),
-        Complex( - 6.283185307179983e+02, - 3.141592653589790e+04),
-        Complex( - 7.539822368615460e+02, + 9.424777960769372e+04),
-        Complex( - 7.539822368615460e+02, - 9.424777960769372e+04),
-        Complex( - 1.884955592153879e+04, + 2.199114857512855e+05),
+        Complex( - 2.827433388231069e+04, + 0.0                  ),
         Complex( - 1.884955592153879e+04, - 2.199114857512855e+05),
-        Complex( - 1.256637061435897e+03, + 2.827433388230813e+05),
-        Complex( - 1.256637061435897e+03, - 2.827433388230813e+05),
-        Complex( - 9.424777960769381e+03, + 2.827433388230815e+05),
-        Complex( - 9.424777960769381e+03, - 2.827433388230815e+05),
-        Complex( - 3.141592653589785e+03, + 4.398229715025704e+05),
-        Complex( - 3.141592653589785e+03, - 4.398229715025704e+05),
-        Complex( - 6.283185307179650e+03, + 4.586725274241097e+05),
-        Complex( - 6.283185307179650e+03, - 4.586725274241097e+05),
+        Complex( - 1.884955592153879e+04, + 2.199114857512855e+05),
+        Complex( - 1.256637061435921e+04, - 5.654866776461634e+05),
         Complex( - 1.256637061435921e+04, + 5.654866776461634e+05),
-        Complex( - 1.256637061435921e+04, - 5.654866776461634e+05)};
+        Complex( - 9.424777960769381e+03, - 2.827433388230815e+05),
+        Complex( - 9.424777960769381e+03, + 2.827433388230815e+05),
+        Complex( - 6.283185307179650e+03, - 4.586725274241097e+05),
+        Complex( - 6.283185307179650e+03, + 4.586725274241097e+05),
+        Complex( - 3.141592653589785e+03, - 4.398229715025704e+05),
+        Complex( - 3.141592653589785e+03, + 4.398229715025704e+05),
+        Complex( - 1.256637061435897e+03, - 2.827433388230813e+05),
+        Complex( - 1.256637061435897e+03, + 2.827433388230813e+05),
+        Complex( - 7.539822368615460e+02, - 9.424777960769372e+04),
+        Complex( - 7.539822368615460e+02, + 9.424777960769372e+04),
+        Complex( - 6.283185307179983e+02, - 3.141592653589790e+04),
+        Complex( - 6.283185307179983e+02, + 3.141592653589790e+04),
+    };
 
     vector<Complex> obtPoles = fitting.getPoles();
     EXPECT_EQ(gusPoles.size(), obtPoles.size());
@@ -670,9 +672,9 @@ TEST_F(FittingTest, polesWithSqueezedSum) {
         Fitting fitting(samples, opts, poles);
         fitting.fit();
 
-        EXPECT_FLOAT_EQ(-0.008222358526517E9, fitting.getPoles()[0].real());
+        EXPECT_FLOAT_EQ(-1.471496117333204E9, fitting.getPoles()[0].real());
         EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[0].imag());
-        EXPECT_FLOAT_EQ(-1.471496117333204E9, fitting.getPoles()[1].real());
+        EXPECT_FLOAT_EQ(-0.008222358526517E9, fitting.getPoles()[1].real());
         EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[1].imag());
     }
 
@@ -683,9 +685,9 @@ TEST_F(FittingTest, polesWithSqueezedSum) {
                 fitting.fit();
         }
 
-        EXPECT_FLOAT_EQ(-0.007693064166528E9, fitting.getPoles()[0].real());
+        EXPECT_FLOAT_EQ(-1.420727251184977E9, fitting.getPoles()[0].real());
         EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[0].imag());
-        EXPECT_FLOAT_EQ(-1.420727251184977E9, fitting.getPoles()[1].real());
+        EXPECT_FLOAT_EQ(-0.007693064166528E9, fitting.getPoles()[1].real());
         EXPECT_FLOAT_EQ(0.0,                  fitting.getPoles()[1].imag());
     }
 
