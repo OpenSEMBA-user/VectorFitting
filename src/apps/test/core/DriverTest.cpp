@@ -299,18 +299,22 @@ TEST_F(DriverTest, multilayer1) {
     EXPECT_FLOAT_EQ( 0.0,                 poles[1].imag());
 
 
+    {
     ifstream file2("./testData/matrixA.txt");
     EXPECT_TRUE(file2.is_open());
+    MatrixXcd A = driver.getA();
     Complex aComponent;
-    for (size_t i = 0; i < driver.getA().rows(); ++i){
-    	for (size_t j = 0; j < driver.getA().cols(); ++j){
+    for (size_t i = 0; i < A.rows(); ++i){
+    	for (size_t j = 0; j < A.cols(); ++j){
     		file2 >> aComponent;
-    		EXPECT_FLOAT_EQ(aComponent.real(), driver.getA()(i,j).real());
-    		EXPECT_FLOAT_EQ(aComponent.imag(), driver.getA()(i,j).imag());
+    		EXPECT_FLOAT_EQ(aComponent.real(), A(i,j).real());
+    		EXPECT_FLOAT_EQ(aComponent.imag(), A(i,j).imag());
     	}
+    }
     }
 
 
+    {
     ifstream file3("./testData/matrixB.txt");
     EXPECT_TRUE(file3.is_open());
     MatrixXi B = driver.getB();
@@ -322,50 +326,56 @@ TEST_F(DriverTest, multilayer1) {
 
     	}
     }
+    }
 
+    {
     ifstream file4("./testData/matrixC.txt");
     EXPECT_TRUE(file4.is_open());
-
-    Complex cComponent;
-    for (size_t i = 0; i < driver.getC().rows(); ++i){
-    	for (size_t j = 0; j < driver.getC().cols(); ++j){
+    MatrixXcd C = driver.getC();
+    for (size_t i = 0; i < C.rows(); ++i){
+    	for (size_t j = 0; j < C.cols(); ++j){
+    		Complex cComponent;
     		file4 >> cComponent;
-    		EXPECT_FLOAT_EQ(cComponent.real(), driver.getC()(i,j).real());
-    		EXPECT_FLOAT_EQ(cComponent.imag(), driver.getC()(i,j).imag());
+    		EXPECT_FLOAT_EQ(cComponent.real(), C(i,j).real());
+    		EXPECT_FLOAT_EQ(cComponent.imag(), C(i,j).imag());
     	}
+    }
     }
 
 
-
+    {
     ifstream file5("./testData/matrixD.txt");
     EXPECT_TRUE(file5.is_open());
-
+    MatrixXcd D = driver.getD();
     Complex dComponent;
-    for (size_t i = 0; i < driver.getD().rows(); ++i){
-    	for (size_t j = 0; j < driver.getD().cols();++j){
+    for (size_t i = 0; i < D.rows(); ++i){
+    	for (size_t j = 0; j < D.cols();++j){
     		file5 >> dComponent;
-    		EXPECT_FLOAT_EQ(dComponent.real(), driver.getD()(i,j).real());
-    		EXPECT_FLOAT_EQ(dComponent.imag(), driver.getD()(i,j).imag());
+    		EXPECT_FLOAT_EQ(dComponent.real(), D(i,j).real());
+    		EXPECT_FLOAT_EQ(dComponent.imag(), D(i,j).imag());
     	}
     }
+    }
 
-
+    {
     ifstream file6("./testData/matrixE.txt");
     EXPECT_TRUE(file6.is_open());
-
+    MatrixXcd E = driver.getE();
     Complex eComponent;
-    for (size_t i = 0; i < driver.getE().rows(); ++i){
-    	for (size_t j = 0; j < driver.getE().cols();++j){
+    for (size_t i = 0; i < E.rows(); ++i){
+    	for (size_t j = 0; j < E.cols();++j){
     		file6 >> eComponent;
-    		EXPECT_FLOAT_EQ(eComponent.real(), driver.getE()(i,j).real());
-    		EXPECT_FLOAT_EQ(eComponent.imag(), driver.getE()(i,j).imag());
+    		EXPECT_FLOAT_EQ(eComponent.real(), E(i,j).real());
+    		EXPECT_FLOAT_EQ(eComponent.imag(), E(i,j).imag());
     	}
+    }
     }
 
     EXPECT_EQ(2, R.size());
     EXPECT_EQ(2, R[0].rows());
     EXPECT_EQ(2, R[0].cols());
 
+    {
     ifstream file7("./testData/matrixR.txt");
     EXPECT_TRUE(file7.is_open());
     Complex rComponent;
@@ -378,7 +388,7 @@ TEST_F(DriverTest, multilayer1) {
     		}
     	}
     }
-
+    }
 
 }
 
