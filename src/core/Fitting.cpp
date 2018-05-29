@@ -369,41 +369,7 @@ void Fitting::fit(){
 
         // First pure real poles in ascending order.
         // Then complex poles in ascending order by imaginary part.
-//        // lines 508 - 524
-//
-//        for (size_t m = 0; m < N; ++m){
-//        	for (size_t n = m+1; n < N; ++n){
-//        		if (equal(roetter(n).imag(), 0.0) &&
-//        		        !equal(roetter(m).imag(), 0.0)){
-//        			Complex aux = roetter(m);
-//        			roetter(m)= roetter(n);
-//        			roetter(n) = aux;
-//        		}
-//        	}
-//        }
-//
-//        size_t N1 = 0;
-//        for (size_t m = 0; m < N; ++m) {
-//        	if (equal(roetter(m).imag(), 0.0)) {
-//        		N1 = m;
-//        	}
-//        }
-//
-//        std::vector<Complex> aux;
-//
-//        for (auto i = 0; i < roetter.size(); ++i) {
-//        	aux.push_back(roetter(i));
-//        }
-//
-//        if (N1 < N) {
-//        	std::sort(aux.begin() + N1, aux.begin() + N, complexOrdering);
-//        }
-//
-//        for (size_t i = 0; i < aux.size(); ++i) {
-//        	roetter(i) = aux[i] - 2.0 * Complex(0.0, 1.0) * aux[i].imag();
-//        }
-
-
+       // lines 508 - 524
         std::vector<Real> auxReal;
         std::vector<Complex> auxComplex;
         for (size_t m = 0; m < N; ++m) {
@@ -495,9 +461,7 @@ void Fitting::fit(){
             VectorXd Escale(A.cols());
             for (int col = 0; col < A.cols(); ++col) {
                 Escale(col) = A.col(col).norm();
-                for (int i = 0; i < A.rows(); ++i) {
-                    A(i,col) = A(i,col) / Escale(col);
-                }
+                A.col(col) /= Escale(col);
             }
 
             MatrixXcd X = A.householderQr().solve(BB);
@@ -511,14 +475,23 @@ void Fitting::fit(){
             }
             switch (options_.getAsymptoticTrend()) {
             case Options::AsymptoticTrend::zero:
+            {
+                SERD(n) = 0.0;
+                SERE(n) = 0.0;
                 break;
+            }
             case Options::AsymptoticTrend::constant:
+            {
                 SERD(n) = X(N);
+                SERE(n) = 0.0;
                 break;
+            }
             case Options::AsymptoticTrend::linear:
+            {
                 SERD(n) = X(N);
                 SERE(n) = X(N+1);
                 break;
+            }
             }
         } // End of loop over Nc responses.Line 696
 

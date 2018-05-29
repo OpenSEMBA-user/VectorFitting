@@ -49,12 +49,14 @@ Driver::Driver(
     std::vector<Fitting::Sample> squeezedSum = calcFsum(squeeze(samples_), opts);
     std::vector<VectorXd> squeezedWeights = squeeze(weights);
     Fitting fitting1(squeezedSum, opts, poles, squeezedWeights);
+    fitting1.options().setSkipResidueIdentification(true);
     for (size_t i = 0; i < opts.getIterations().first; ++i) {
         fitting1.fit();
         poles = fitting1.getPoles();
     }
 
     Fitting fitting2(squeeze(samples_), opts, poles, squeeze(weights));
+    fitting2.options().setSkipResidueIdentification(true);
     for (size_t i = 0; i < opts.getIterations().second; ++i) {
         if (i == opts.getIterations().second - 1) {
             fitting2.options().setSkipResidueIdentification(false);
@@ -167,16 +169,8 @@ void Driver::tri2full(const Fitting& fitting) {
 				D_(j,i) = fitting.getD()(tell);
 				E_(j,i) = fitting.getE()(tell);
 			}
-			for (size_t k = 0; k < i*N; ++k){
-				for (size_t m = 0; m < N; ++m){
-					C_(i,j*N + k) = fitting.getC()(tell,m);
-				}
-			}
-			for (size_t l = 0; l < j*N; ++l){
-				for (size_t m = 0; m < N; ++m){
-					C_(i,i*N + l) = fitting.getC()(tell,m);
-				}
-			}
+			C_.block(i,j*N, 1,N) = fitting.getC().row(tell);
+			C_.block(j,i*N, 1,N) = fitting.getC().row(tell);
 			tell++;
 		}
 	}
