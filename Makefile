@@ -42,7 +42,7 @@ ifeq ($(target),release)
    	CXXFLAGS +=-O2
 endif
 ifeq ($(target),optimal)
-   	CXXFLAGS +=-O3
+   	CXXFLAGS +=-march=native -O3
 endif
 
 # =============================================================================
