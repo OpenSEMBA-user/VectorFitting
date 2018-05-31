@@ -3,4 +3,6 @@
 .settings/
 
 build/
+build_cmake/
 obj/
+*.log
