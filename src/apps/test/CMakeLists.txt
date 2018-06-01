@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
+find_package(GTest)
+
 if (GTEST_FOUND)
     project(vectorfitting_test CXX)
     include_directories(${GTEST_INCLUDE_DIRS}
