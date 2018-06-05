@@ -20,8 +20,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with OpenSEMBA. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef SEMBA_MATH_TYPES_H_
-#define SEMBA_MATH_TYPES_H_
+#ifndef VECTORFITTING_TYPES_H_
+#define VECTORFITTING_TYPES_H_
 
 #ifdef _MSC_VER
 #pragma warning(disable:4244)

@@ -177,36 +177,29 @@ void Driver::tri2full(const Fitting& fitting) {
 
 }
 
-std::pair<std::vector<Complex>, std::vector<MatrixXcd>> Driver::ss2pr() const {
+std::vector<std::pair<Complex,MatrixXcd>> Driver::ss2pr() const {
     return ss2pr_(A_, B_, C_);
 }
 
-std::pair<std::vector<Complex>, std::vector<MatrixXcd>> Driver::ss2pr_(
+std::vector<std::pair<Complex,MatrixXcd>> Driver::ss2pr_(
         const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C) {
 
 	size_t Nc = C.rows();
 	size_t N = A.rows() / Nc;
 
-	std::vector<MatrixXcd> R;
+	std::vector<std::pair<Complex,MatrixXcd>> pR;
 	for (size_t i = 0; i < N; ++i){
 		MatrixXcd Raux = MatrixXcd::Zero(Nc,Nc);
 		for (size_t j = 0; j < Nc; ++j){
 			const size_t ind = j*N + i;
 			Raux += C.col(ind) * B.row(ind).cast<Complex>();
 		}
-		R.push_back(Raux);
+
+		Complex pole = A(i,i);
+		pR.push_back({pole, Raux});
  	}
 
-	std::vector<Complex> poles;
-	for (size_t i = 0; i < N; ++i){
-		for (size_t j = 0; j < N; ++j){
-			if (j == i){
-				poles.push_back(A(i,j));
-			}
-		}
-	}
-
-	return {poles, R};
+	return pR;
 }
 
 MatrixXcd Driver::getA() const {
@@ -262,9 +255,7 @@ Real Driver::getRMSE() const {
  */
 std::vector<Driver::Sample> Driver::getFittedSamples() const {
 
-    std::pair<std::vector<Complex>, std::vector<MatrixXcd>> pR = ss2pr();
-    const std::vector<Complex>& poles = pR.first;
-    const std::vector<MatrixXcd>& residues = pR.second;
+    const std::vector<PoleResidue> pR = ss2pr();
 
     std::vector<Sample> res;
     for (size_t i = 0; i < samples_.size(); ++i) {
@@ -272,8 +263,10 @@ std::vector<Driver::Sample> Driver::getFittedSamples() const {
         MatrixXcd fit =
                 MatrixXcd::Zero(samples_[i].second.rows(),
                                 samples_[i].second.cols());
-        for (size_t p = 0; p < poles.size(); ++p) {
-            fit += residues[p] / (s - poles[p]);
+        for (size_t p = 0; p < pR.size(); ++p) {
+            const Complex& pole = pR[p].first;
+            const MatrixXcd& residue = pR[p].second;
+            fit += residue / (s - pole);
         }
 
         fit += D_;
