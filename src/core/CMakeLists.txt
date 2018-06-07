@@ -7,3 +7,5 @@ endif()
 add_sources(. SRCS)
 
 add_library(vectorfitting STATIC ${SRCS})
+
+target_include_directories(vectorfitting PUBLIC ../../external/)

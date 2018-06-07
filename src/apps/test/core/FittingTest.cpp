@@ -25,7 +25,7 @@
 
 #include "gtest/gtest.h"
 
-#include "../../../core/Fitting.h"
+#include "Fitting.h"
 #include "SpaceGenerator.h"
 
 using namespace VectorFitting;
