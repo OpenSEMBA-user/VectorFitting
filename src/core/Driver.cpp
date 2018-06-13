@@ -178,7 +178,7 @@ void Driver::tri2full(const Fitting& fitting) {
 }
 
 std::vector<Driver::PoleResidue> Driver::ss2pr_(
-        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C) const {
+        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C) {
 
 	size_t Nc = C.rows();
 	size_t N = A.rows() / Nc;
