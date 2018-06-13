@@ -107,10 +107,10 @@ TEST_F(DriverTest, constant){
 	EXPECT_EQ(Nc, driver.getE().rows());
 	EXPECT_EQ(Nc, driver.getE().cols());
 
-	EXPECT_EQ(N, driver.ss2pr().second.size());
+	EXPECT_EQ(N, driver.ss2pr().size());
 	for (size_t i = 0; i < N; ++i) {
-		EXPECT_EQ(Nc, driver.ss2pr().second[i].rows());
-		EXPECT_EQ(Nc, driver.ss2pr().second[i].cols());
+		EXPECT_EQ(Nc, driver.ss2pr()[i].second.rows());
+		EXPECT_EQ(Nc, driver.ss2pr()[i].second.cols());
 	}
 
 
@@ -153,14 +153,14 @@ TEST_F(DriverTest, constant){
         EXPECT_NEAR(0.0, driver.getE()(i).imag(), tol_);
     }
 
-	auto R = driver.ss2pr().second;
-	for (size_t p = 0; p < R.size(); ++p) {
-	    EXPECT_EQ(Nc, R[p].rows());
-	    EXPECT_EQ(Nc, R[p].cols());
+	auto pR = driver.ss2pr();
+	for (size_t p = 0; p < pR.size(); ++p) {
+	    EXPECT_EQ(Nc, pR[p].second.rows());
+	    EXPECT_EQ(Nc, pR[p].second.cols());
 	    for (size_t i = 0; i < Nc; ++i) {
 	        for (size_t j = 0; j < Nc; ++j) {
-	            EXPECT_NEAR(0.0, R[p](i,j).real(), tol_);
-	            EXPECT_NEAR(0.0, R[p](i,j).imag(), tol_);
+	            EXPECT_NEAR(0.0, pR[p].second(i,j).real(), tol_);
+	            EXPECT_NEAR(0.0, pR[p].second(i,j).imag(), tol_);
 	        }
 	    }
 	}
@@ -254,14 +254,12 @@ TEST_F(DriverTest, multilayer1) {
     EXPECT_NEAR(6.397311869800918e-05, driver.getRMSE(), 1e-4);
 
     auto pR = driver.ss2pr();
-    const std::vector<Complex>& poles = pR.first;
-    const std::vector<MatrixXcd>& R = pR.second;
 
-    EXPECT_EQ(2, poles.size());
-    EXPECT_FLOAT_EQ(-1.440702837082726E9, poles[0].real());
-    EXPECT_FLOAT_EQ( 0.0,                 poles[0].imag());
-    EXPECT_FLOAT_EQ(-0.007688357841860E9, poles[1].real());
-    EXPECT_FLOAT_EQ( 0.0,                 poles[1].imag());
+    EXPECT_EQ(2, pR.size());
+    EXPECT_FLOAT_EQ(-1.440702837082726E9, pR[0].first.real());
+    EXPECT_FLOAT_EQ( 0.0,                 pR[0].first.imag());
+    EXPECT_FLOAT_EQ(-0.007688357841860E9, pR[1].first.real());
+    EXPECT_FLOAT_EQ( 0.0,                 pR[1].first.imag());
 
 
     auto A = driver.getA();
@@ -326,9 +324,9 @@ TEST_F(DriverTest, multilayer1) {
         }
     }
 
-    EXPECT_EQ(2, R.size());
-    EXPECT_EQ(2, R[0].rows());
-    EXPECT_EQ(2, R[0].cols());
+    EXPECT_EQ(2, pR.size());
+    EXPECT_EQ(2, pR[0].second.rows());
+    EXPECT_EQ(2, pR[0].second.cols());
 
     {
         MatrixXcd RRef(2,2);
@@ -336,9 +334,9 @@ TEST_F(DriverTest, multilayer1) {
                        Complex(-0.000000044303177E8, 0.0);
         RRef.row(1) << Complex(-0.000000044303177E8, 0.0),
                        Complex(-0.042475706706999E8, 0.0);
-        for (MatrixXcd::Index i = 0; i < R[0].size(); ++i) {
-            EXPECT_FLOAT_EQ(RRef(i).real(), R[0](i).real());
-            EXPECT_FLOAT_EQ(RRef(i).imag(), R[0](i).imag());
+        for (MatrixXcd::Index i = 0; i < pR[0].second.size(); ++i) {
+            EXPECT_FLOAT_EQ(RRef(i).real(), pR[0].second(i).real());
+            EXPECT_FLOAT_EQ(RRef(i).imag(), pR[0].second(i).imag());
         }
 
     }
@@ -349,9 +347,9 @@ TEST_F(DriverTest, multilayer1) {
                        Complex( 0.000000190391243E5, 0.0);
         RRef.row(1) << Complex( 0.000000190391243E5, 0.0),
                        Complex(-0.013767453931084E5, 0.0);
-        for (MatrixXcd::Index i = 0; i < R[1].size(); ++i) {
-            EXPECT_FLOAT_EQ(RRef(i).real(), R[1](i).real());
-            EXPECT_FLOAT_EQ(RRef(i).imag(), R[1](i).imag());
+        for (MatrixXcd::Index i = 0; i < pR[1].second.size(); ++i) {
+            EXPECT_FLOAT_EQ(RRef(i).real(), pR[1].second(i).real());
+            EXPECT_FLOAT_EQ(RRef(i).imag(), pR[1].second(i).imag());
         }
     }
 
@@ -383,16 +381,14 @@ TEST_F(DriverTest, ss2pr) {
          -0.000000778186644E9,   0.000000022447188E9,  -0.000000000094385E9,   0.000000000023409E9,   0.019759228452776E9,  -0.001781334631323E9, -0.000009328428577E9,  -0.000000654789196E9;
 
     auto pR = Driver::ss2pr_(A, B, C);
-    vector<Complex>& p = pR.first;
-    vector<MatrixXcd>& R = pR.second;
 
-    for (size_t i = 0; i < p.size(); ++i) {
-        EXPECT_FLOAT_EQ(0.0, p[i].imag());
+    for (size_t i = 0; i < pR.size(); ++i) {
+        EXPECT_FLOAT_EQ(0.0, pR[i].first.imag());
     }
-    EXPECT_FLOAT_EQ(-5.394842153248248E9, p[0].real());
-    EXPECT_FLOAT_EQ(-0.868071191079481E9, p[1].real());
-    EXPECT_FLOAT_EQ(-0.057328769608143E9, p[2].real());
-    EXPECT_FLOAT_EQ(-0.007676010396664E9, p[3].real());
+    EXPECT_FLOAT_EQ(-5.394842153248248E9, pR[0].first.real());
+    EXPECT_FLOAT_EQ(-0.868071191079481E9, pR[1].first.real());
+    EXPECT_FLOAT_EQ(-0.057328769608143E9, pR[2].first.real());
+    EXPECT_FLOAT_EQ(-0.007676010396664E9, pR[3].first.real());
 
     vector<MatrixXcd> RKnown(1, MatrixXcd(2,2));
     RKnown[0] << Complex(-5.114217225517887E9, 0.0), Complex(-0.000000778186644E9, 0.0),
@@ -400,8 +396,9 @@ TEST_F(DriverTest, ss2pr) {
 
     for (size_t i = 0; i < RKnown.size(); ++i) {
         for (auto j = 0; j < RKnown[i].size(); ++j) {
-            EXPECT_FLOAT_EQ(RKnown[i](j).real(), R[i](j).real());
-            EXPECT_FLOAT_EQ(RKnown[i](j).imag(), R[i](j).imag());
+            const MatrixXcd& R = pR[i].second;
+            EXPECT_FLOAT_EQ(RKnown[i](j).real(), R(j).real());
+            EXPECT_FLOAT_EQ(RKnown[i](j).imag(), R(j).imag());
         }
     }
 }

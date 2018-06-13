@@ -38,7 +38,7 @@ class Driver {
     friend void VectorFitting::Options::setSkipPoleIdentification(bool);
 public:
     typedef std::pair<Complex, MatrixXcd> Sample;
-
+    typedef std::pair<Complex,MatrixXcd> PoleResidue;
 	/**
 	 * A fitter with starting poles computed automatically will be called
 	 * from VFdriver
@@ -61,12 +61,12 @@ public:
 
 	Real getRMSE() const;
 
-	std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr() const;
+	std::vector<std::pair<Complex,MatrixXcd>> ss2pr() const;
 
 	static std::vector<Complex> buildPoles(
             const std::pair<Real, Real>& range, const Options& opts);
 
-	static std::pair<std::vector<Complex>, std::vector<MatrixXcd>> ss2pr_(
+	static std::vector<std::pair<Complex,MatrixXcd>> ss2pr_(
 	        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C);
 private:
 
