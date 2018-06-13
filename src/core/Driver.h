@@ -50,24 +50,26 @@ public:
            const Options& options,
            const std::vector<Complex>& poles = {},
            const std::vector<MatrixXd>& weights = {});
-	MatrixXcd getA() const;
-	MatrixXi  getB() const;
-	MatrixXcd getC() const;
-	MatrixXcd getD() const;
-	MatrixXcd getE() const;
+	MatrixXcd getA() const { return A_; }
+	MatrixXi  getB() const { return B_; }
+	MatrixXcd getC() const { return C_; }
+	MatrixXcd getD() const { return D_; }
+	MatrixXcd getE() const { return E_; }
 
 	std::vector<Sample> getFittedSamples() const;
-	std::vector<Sample> getSamples() const;
+	std::vector<Sample> getSamples() const { return samples_; }
 
 	Real getRMSE() const;
 
-	std::vector<std::pair<Complex,MatrixXcd>> ss2pr() const;
+	std::vector<std::pair<Complex, MatrixXcd>> ss2pr() const {
+		return ss2pr_(A_, B_, C_);
+	}
 
 	static std::vector<Complex> buildPoles(
             const std::pair<Real, Real>& range, const Options& opts);
 
-	static std::vector<std::pair<Complex,MatrixXcd>> ss2pr_(
-	        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C);
+	std::vector<PoleResidue> ss2pr_(
+	        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C) const;
 private:
 
 	MatrixXcd A_;
@@ -76,9 +78,8 @@ private:
 	MatrixXcd D_;
 	MatrixXcd E_;
 
-	std::vector<Driver::Sample> samples_;
-
-
+	std::vector<Sample> samples_;
+	
 	template <class T>
 	static T blkdiag(const T& a, const T& b) {
 	    T res = T::Zero(a.rows() + b.rows(), a.cols() + b.cols());

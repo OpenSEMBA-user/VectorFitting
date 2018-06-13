@@ -177,12 +177,8 @@ void Driver::tri2full(const Fitting& fitting) {
 
 }
 
-std::vector<std::pair<Complex,MatrixXcd>> Driver::ss2pr() const {
-    return ss2pr_(A_, B_, C_);
-}
-
-std::vector<std::pair<Complex,MatrixXcd>> Driver::ss2pr_(
-        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C) {
+std::vector<Driver::PoleResidue> Driver::ss2pr_(
+        const MatrixXcd& A, const MatrixXi& B, const MatrixXcd& C) const {
 
 	size_t Nc = C.rows();
 	size_t N = A.rows() / Nc;
@@ -200,31 +196,6 @@ std::vector<std::pair<Complex,MatrixXcd>> Driver::ss2pr_(
  	}
 
 	return pR;
-}
-
-MatrixXcd Driver::getA() const {
-	return A_;
-}
-
-MatrixXi Driver::getB() const {
-	return B_;
-}
-
-MatrixXcd Driver::getC() const {
-	return C_;
-}
-
-MatrixXcd Driver::getD() const {
-	return D_;
-}
-
-MatrixXcd Driver::getE() const {
-	return E_;
-}
-
-
-std::vector<Driver::Sample> Driver::getSamples() const {
-	return samples_;
 }
 
 /**
